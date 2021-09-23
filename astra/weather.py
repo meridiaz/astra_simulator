@@ -61,6 +61,9 @@ class environment(object):
     UTC_offset : float
         the offset in hours between the current time zone and UTC
         (for example, Florida in winter has a UTC_offset = -5)
+    realScenario: bool (default False)
+        indicates if the enviroment uses forecast data or directly 
+        from de sensors
 
     Attributes
     ----------
@@ -76,6 +79,9 @@ class environment(object):
         The offset in hours between the current time zone and UTC. NOTE: If
         zero, UTC offset is AUTOMATICALLY retrieved using the launch site GPS
         location
+    realScenario: bool (default = False)
+        indicates if the enviroment uses forecast data or directly 
+        from de sensors
 
     Notes
     -----
@@ -96,7 +102,8 @@ class environment(object):
                  inflationTemperature=0.0,
                  UTC_offset=0.0,
                  debugging=False,
-                 load_on_init=False):
+                 load_on_init=False,
+                 realScenario=False):
 
         # COMMON INTERFACE
 
@@ -109,6 +116,7 @@ class environment(object):
         self.dateAndTime = dateAndTime
         self.UTC_offset = UTC_offset
         self.debugging = debugging
+        self.realScenario=realScenario
 
         self._UTC_time = None
 
@@ -698,6 +706,93 @@ class soundingEnvironment(environment):
 
         return None
 
+class realEnvironment(environment):   
+    """
+    Class responsible for creating a real environment in which data is 
+    taken from sensors.
+
+    Parameters
+    ----------
+    launchSiteLat : float
+        latitude of the launch site [deg]
+    launchSiteLon : float
+        longitude of the launch site [deg]
+    launchSiteElev : float
+        elevation of the launch site above Mean Sea Level [m]
+    dateAndTime : :obj:`datetime.datetime`
+        The launch time
+    UTC_offset : float
+        the offset in hours between the current time zone and UTC (for example,
+        Florida in winter has a UTC_offset = -5)
+    inflationTemperature : float
+        the ambient temperature during the balloon inflation [degC]
+    realScenario: bool (default False)
+        indicates if the enviroment uses forecast data or directly 
+        from de sensors   
+    """
+    def __init__(self,
+                 launchSiteLat,
+                 launchSiteLon,
+                 launchSiteElev,
+                 dateAndTime,
+                 UTC_offset=0,
+                 inflationTemperature=0.0,
+                 debugging=False,             
+                 load_on_init=False):
+               
+        super(realEnvironment, self).__init__(
+            inflationTemperature=inflationTemperature,
+            launchSiteLat=launchSiteLat,
+            launchSiteLon=launchSiteLon,
+            launchSiteElev=launchSiteElev,
+            dateAndTime=dateAndTime,
+            UTC_offset=UTC_offset,
+            debugging=debugging,
+            load_on_init=load_on_init
+            realScenario=True)
+        
+    def getTemperature():
+        logger.debug('Taking temperature from sensors...')
+        return collectTemperature()
+
+    def getPressure():
+        logger.debug('Taking pressure from sensors...')
+        return collectPressure()
+
+    def getWindDirection():
+        logger.debug('Taking wind direction from sensors...')
+        return collectWindDirection()
+
+    def getWindSpeed():
+        logger.debug('Taking wind speed from sensors...')
+        return collectWindSpeed()
+    
+    def getDensity():
+        # Standard constants
+        AirMolecMass = 0.02896 #kg/mol
+        GasConstant = 8.31447  #J/(mol * K)
+        #dens = P[mb]*M/(R * T)
+        logger.debug('Calculating density')
+        return self.getPressure() * 100 * AirMolecMass / (
+                    GasConstant * tools.c2kel(self.getTemperature()))
+    
+    def getViscosity():
+        # Standard constants
+        standardTempRankine = tools.c2kel(15) * (9. / 5)
+        Mu0 = 0.01827 # Mu 0 (15 deg) [cP]
+        C = 120 # Sutherland's Constant
+        #gasses viscosity: mu[cP] = Mu0 * (a/b) * (T/T0)^(3/2)
+        #where a = 0,555*T0 + C y b = 0,555*T + C
+        # 1 poise = 100 cp = 0.1 Pa*s
+        
+        logger.debug('Calculating viscosity.')
+        tempRankine = tools.c2kel(self.getTemperature()) * (9. / 5)
+        TTO = (tempRankine / standardTempRankine) ** 1.5 # T/TO [Rankine/Rankine]
+        TR = ((0.555 * standardTempRankine) + C) / ((0.555 * tempRankine) + C)
+        vcP = Mu0 * TTO * TR
+        return vcP / 1000.
+            
+        
 
 class forecastEnvironment(environment):
     """
