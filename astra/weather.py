@@ -751,19 +751,19 @@ class realEnvironment(environment):
             load_on_init=load_on_init
             realScenario=True)
         
-    def getTemperature():
+    def getTemperature(*args):
         logger.debug('Taking temperature from sensors...')
         return collectTemperature()
 
-    def getPressure():
+    def getPressure(*args):
         logger.debug('Taking pressure from sensors...')
         return collectPressure()
 
-    def getWindDirection():
+    def getWindDirection(*args):
         logger.debug('Taking wind direction from sensors...')
         return collectWindDirection()
 
-    def getWindSpeed():
+    def getWindSpeed(*args):
         logger.debug('Taking wind speed from sensors...')
         return collectWindSpeed()
     

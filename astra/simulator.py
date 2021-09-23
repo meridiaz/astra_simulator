@@ -783,6 +783,9 @@ class flight(object):
         # RUN THE FLIGHT SIMULATION
         for flightNumber in range(self.numberOfSimRuns):
             logger.debug('SIMULATING FLIGHT %d' % (flightNumber + 1))
+            if self.environment.realScenario:
+            	self.launchSiteLat = getLat()
+		self.launchSiteLon = getLon()
             result, _ = self.fly(flightNumber, self.environment.dateAndTime, runPreflight=False)
             self.results.append(result)
             self.updateProgress(
@@ -982,7 +985,9 @@ class flight(object):
         # Use the correct wind profile according to the simulation type: a
         # standard one for deterministic simulations or a perturbed one for
         # Monte Carlo simulations.
-        if self.numberOfSimRuns == 1:
+        # also if it is a real scenario we need to obtain wind parameters
+        # from sensors
+        if self.numberOfSimRuns == 1 or self.environment.realScenario:
             currentFlightWindDirection = self.environment.getWindDirection
             currentFlightWindSpeed = self.environment.getWindSpeed
         else:
@@ -1007,13 +1012,13 @@ class flight(object):
 
         logger.debug('Beginning simulation of flight %d' % (flightNumber + 1))
 
-        self._lastFlightBurst = False
+        self._lastFlightBurst = False #hasBurst()
         self._floatingReached = False
         self._t_floatStart = None
         self._lastFlightBurstAlt = 0.0
         self._lastBurstIndex = 0
-        self._currentLatPosition = self.launchSiteLat
-        self._currentLonPosition = self.launchSiteLon
+	self._currentLatPosition = self.launchSiteLat
+	self._currentLonPosition = self.launchSiteLon
         self._currentTime = 0
         self._totalRuns = 0
 
@@ -1056,7 +1061,7 @@ class flight(object):
                 currentFlightWindSpeed(self._currentLatPosition,
                                        self._currentLonPosition,
                                        altitude,
-                                       currentTime) * 0.514444
+                                       currentTime) * 0.514444 #por que multiplica esto
             )
 
             # Calculate how much the drift has been from the previous to the
@@ -1102,6 +1107,7 @@ class flight(object):
 
 
                 # Calculate current balloon diameter to check for burst
+                # balloon gas temperatura and density and balloon volume ad diameter
                 gasTemp = tools.c2kel(self.environment.getTemperature(
                     self._currentLatPosition, self._currentLonPosition,
                     altitude, currentTime))
@@ -1229,7 +1235,10 @@ class flight(object):
         # Note: the simulation carries on all the way to the maxFlightTime,
         # even if the altitude becomes negative. Negative values of altitude
         # will be trimmed later on.
-        initialConditions = numpy.array([self.launchSiteElev, 0.0])
+        if self.environment.realScenario:
+        	initialConditions = numpy.array([getElev(), 0.0])
+        else:
+        	initialConditions = numpy.array([self.launchSiteElev, 0.0])
         timeVector = numpy.arange(0, self.maxFlightTime + self.samplingTime,
             self.samplingTime)
 
