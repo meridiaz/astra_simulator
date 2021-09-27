@@ -786,7 +786,7 @@ class flight(object):
         for flightNumber in range(self.numberOfSimRuns):
             logger.debug('SIMULATING FLIGHT %d' % (flightNumber + 1))
             if self.environment.realScenario:
-                self.launchSiteLat = getLat() # TODO
+                self.launchSiteLat = getLat() # TODO: take both from sensors
                 self.launchSiteLon = getLon() # TODO
                 currentDateTime = datetime.now()
             else:
@@ -879,7 +879,7 @@ class flight(object):
                                              self.launchSiteLon,
                                              self.launchSiteElev,
                                              launchDateTime),
-                #fix me: change it and take pressure from sensor if it is
+                #TODO change it and take pressure from sensor if it is
                 # a real scenario
                 self._gasMolecularMass,
                 self.excessPressureCoeff
@@ -1024,7 +1024,7 @@ class flight(object):
 
         logger.debug('Beginning simulation of flight %d' % (flightNumber + 1))
 
-        self._lastFlightBurst = False #fix me hasBurst()
+        self._lastFlightBurst = False #TODO hasBurst()
         self._floatingReached = False
         self._t_floatStart = None
         self._lastFlightBurstAlt = 0.0
@@ -1252,7 +1252,7 @@ class flight(object):
         # even if the altitude becomes negative. Negative values of altitude
         # will be trimmed later on.
         if self.environment.realScenario:
-            #fix me: take elev and ascent rate from sensors
+            #TODO: take elev and ascent rate from sensors
             initialConditions = numpy.array([getElev(), getCurrentAscentRate()])
         else:
             initialConditions = numpy.array([self.launchSiteElev, 0.0])

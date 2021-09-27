@@ -9,7 +9,7 @@ Data in the available_baloons_parachutes.balloons dictionary is of the form:
                     Weibull lambda, Weibull k)
 
 Data in the available_balloons_parachutes.parachutes dictionary is of the form:
-    {"CHUTE ID" : A_ref}
+    {"CHUTE ID" : A_ref (m^2)}
 
 University of Southampton
 """
@@ -75,10 +75,11 @@ parachutes = {
     "SPH100": 4.6,
     "TX5012": 0.69398,
     "TX160": 1.91134,
+    "PX02": 3.14,
     None: 0,
     "": 0
 }
 """Parachute Data
 
-Data is in the format: "CHUTE ID" : A_ref
+Data is in the format: "CHUTE ID" : A_ref(m^2)
 """
