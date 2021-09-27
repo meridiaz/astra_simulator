@@ -5,7 +5,7 @@ This file contains key data of all the balloons currently supported by the
 simulator.
 
 Data in the available_baloons_parachutes.balloons dictionary is of the form:
-    "BALLOON ID" : (weight, nominal burst diameter,
+    "BALLOON ID" : (weight (kg), nominal burst diameter (m),
                     Weibull lambda, Weibull k)
 
 Data in the available_balloons_parachutes.parachutes dictionary is of the form:
@@ -51,7 +51,9 @@ balloons = {
     "HW1200": (1.2, 8.5, 9.5301, 14.3577),
     "HW1500": (1.5, 9.5, 10.6513, 14.3577),
     "HW1600": (1.6, 10.5, 11.7725, 14.3577),
-    "HW2000": (2.0, 11.0, 12.3330, 14.3577)
+    "HW2000": (2.0, 11.0, 12.3330, 14.3577),
+    #PAWAN 
+    "PACPR1600": (1.6, 9.5, '?', '?')
 }
 """Balloon data.
 

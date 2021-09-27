@@ -706,7 +706,7 @@ class soundingEnvironment(environment):
 
         return None
 
-class realEnvironment(environment):   
+class realEnvironment(forecastEnvironment):   
     """
     Class responsible for creating a real environment in which data is 
     taken from sensors.
@@ -726,10 +726,38 @@ class realEnvironment(environment):
         Florida in winter has a UTC_offset = -5)
     inflationTemperature : float
         the ambient temperature during the balloon inflation [degC]
-    realScenario: bool (default False)
+   
+    [forceNonHD] : bool (default False)
+        if TRUE, the weather forecast download will be forced to a lower
+        resolution (i.e. 1deg x 1deg)
+    [forecastDuration] : float (default 4)
+        The number of hours from dateAndTime for which to download weather data
+    [use_async] : bool (default True)
+        Use an asynchronous request for downloads. This should speed up the
+        download, but may incur larger memory overhead for large forecastDuration.
+    [requestSimultaneous] : bool (default True)
+        If True, populate a dictionary of responses from the web download
+        requests, then process the data. If False, each response will be
+        removed once the data has been processed: This has better memory
+        overhead for large ForecastDuration, but is slower, and does not work
+        with asynchronous requesting (use_async)
+    [debug] : bool, optional (default False)
+        If TRUE, all the information available will be logged
+    [log_to_file]: bool, optional (default False)
+         If true, all error and debug logs will be stored in an error.log file
+    [progressHandler] : function, or None (default None)
+        Progress for each downloaded parameter (in %) will be passed to this
+        function, if provided.
+    [load_on_init] : bool, optional (default False)
+        If True, the forecast will be downloaded when the environment object is
+        created. This is set to False by default, as the :obj:`flight` object
+        should preferably be used to load the forecast (input validation and
+        preflight checks should be done before expensive data download) 
+     realScenario: bool (default True in this class)
         indicates if the enviroment uses forecast data or directly 
         from de sensors   
     """
+    
     def __init__(self,
                  launchSiteLat,
                  launchSiteLon,
@@ -750,14 +778,11 @@ class realEnvironment(environment):
             debugging=debugging,
             load_on_init=load_on_init
             realScenario=True)
+        # es necesario llamar a load antes de comenzar 
+        # las simulaciones
         
-    def getTemperature(*args):
-        logger.debug('Taking temperature from sensors...')
-        return collectTemperature()
-
-    def getPressure(*args):
-        logger.debug('Taking pressure from sensors...')
-        return collectPressure()
+    # it is not required to override the methos except for those
+    # related to wind parameters: speed and direction
 
     def getWindDirection(*args):
         logger.debug('Taking wind direction from sensors...')
@@ -766,31 +791,6 @@ class realEnvironment(environment):
     def getWindSpeed(*args):
         logger.debug('Taking wind speed from sensors...')
         return collectWindSpeed()
-    
-    def getDensity():
-        # Standard constants
-        AirMolecMass = 0.02896 #kg/mol
-        GasConstant = 8.31447  #J/(mol * K)
-        #dens = P[mb]*M/(R * T)
-        logger.debug('Calculating density')
-        return self.getPressure() * 100 * AirMolecMass / (
-                    GasConstant * tools.c2kel(self.getTemperature()))
-    
-    def getViscosity():
-        # Standard constants
-        standardTempRankine = tools.c2kel(15) * (9. / 5)
-        Mu0 = 0.01827 # Mu 0 (15 deg) [cP]
-        C = 120 # Sutherland's Constant
-        #gasses viscosity: mu[cP] = Mu0 * (a/b) * (T/T0)^(3/2)
-        #where a = 0,555*T0 + C y b = 0,555*T + C
-        # 1 poise = 100 cp = 0.1 Pa*s
-        
-        logger.debug('Calculating viscosity.')
-        tempRankine = tools.c2kel(self.getTemperature()) * (9. / 5)
-        TTO = (tempRankine / standardTempRankine) ** 1.5 # T/TO [Rankine/Rankine]
-        TR = ((0.555 * standardTempRankine) + C) / ((0.555 * tempRankine) + C)
-        vcP = Mu0 * TTO * TR
-        return vcP / 1000.
             
         
 
@@ -997,17 +997,23 @@ class forecastEnvironment(environment):
                 time - timedelta(seconds=self.UTC_offset * 3600))))
 
         # Extra definitions for derived quantities (density and viscosity)
-        AirMolecMass = 0.02896
-        GasConstant = 8.31447
+        # Standard constants
+        AirMolecMass = 0.02896 #kg/mol
+        GasConstant = 8.31447  #J/(mol * K)  
         standardTempRankine = tools.c2kel(15) * (9. / 5)
         Mu0 = 0.01827 # Mu 0 (15 deg) [cP]
         C = 120 # Sutherland's Constant
-
+        
+        #dens = P[mb]*M/(R * T)
         self.getDensity = lambda lat, lon, alt, time: \
             self.getPressure(lat, lon, alt, time) * 100 * AirMolecMass / (GasConstant * 
                 tools.c2kel(self.getTemperature(lat, lon, alt, time))
             )
-
+        
+        
+        #gasses viscosity: mu[cP] = Mu0 * (a/b) * (T/T0)^(3/2)
+        #where a = 0,555*T0 + C y b = 0,555*T + C
+        # 1 poise = 100 cp = 0.1 Pa*s
         def viscosity(lat, lon, alt, time):
             tempRankine = tools.c2kel(self.getTemperature(lat, lon, alt, time)) * (9. / 5)
             TTO = (tempRankine / standardTempRankine) ** 1.5 # T/TO [Rankine/Rankine]
