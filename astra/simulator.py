@@ -25,7 +25,9 @@ from . import global_tools as tools
 from . import drag_helium
 from . import available_balloons_parachutes
 import json
-
+import time 
+from . import sensor_tools as sensor
+#TODO: fix class and function names that do not follow convention
 # Pass through the @profile decorator if line profiler (kernprof) is not in use
 try:
     builtins.profile
@@ -786,8 +788,8 @@ class flight(object):
         for flightNumber in range(self.numberOfSimRuns):
             logger.debug('SIMULATING FLIGHT %d' % (flightNumber + 1))
             if self.environment.realScenario:
-                self.launchSiteLat = getLat() # TODO: take both from sensors
-                self.launchSiteLon = getLon() # TODO
+                self.launchSiteLat = sensor.getLat() # TODO: take both from sensors
+                self.launchSiteLon = sensor.getLon() # TODO
                 currentDateTime = datetime.now()
             else:
                 currentDateTime = self.environment.dateAndTime
@@ -795,6 +797,7 @@ class flight(object):
             self.results.append(result)
             self.updateProgress(
                 float(flightNumber + 1) / self._totalStepsForProgress, 0)
+            #TODO: time.sleep(2*60) #dormir durante un tiempo antes sig simu
 
         # _________________________________________________________________ #
         # POSTFLIGHT HOUSEKEEPING AND RESULT PROCESSING
@@ -837,7 +840,7 @@ class flight(object):
                 self._parachuteCD.append(0.9 + 0.2 * numpy.random.random() *
                                          (-1) ** round(numpy.random.random()))
                 #calculate burst diameter with weibull probability density
-                if self._weibull_lambda='?' and self._weibull_k='?':
+                if self._weibull_lambd a== '?' and self._weibull_k == '?':
                     self._burstDiameter.append(
                         available_balloons_parachutes.balloons[self.balloonModel][1])
                 else:
@@ -1024,7 +1027,7 @@ class flight(object):
 
         logger.debug('Beginning simulation of flight %d' % (flightNumber + 1))
 
-        self._lastFlightBurst = False #TODO hasBurst()
+        self._lastFlightBurst = False #TODO sensor.hasBurst()
         self._floatingReached = False
         self._t_floatStart = None
         self._lastFlightBurstAlt = 0.0
@@ -1130,7 +1133,7 @@ class flight(object):
                         * self._gasMolecularMass / (8.31447 * gasTemp))
                 """
                 gasDensity = self.environment.getDensity(self._currentLatPosition,
-                        self._currentLonPosition, altitude,currentTime)
+                        self._currentLonPosition, altitude, currentTime)
                 balloonVolume = gasMass / gasDensity
                 balloonDiameter = (6 * balloonVolume / pi) ** (1. / 3)
 
@@ -1253,7 +1256,7 @@ class flight(object):
         # will be trimmed later on.
         if self.environment.realScenario:
             #TODO: take elev and ascent rate from sensors
-            initialConditions = numpy.array([getElev(), getCurrentAscentRate()])
+            initialConditions = numpy.array([sensor.getElev(), getCurrentAscentRate()])
         else:
             initialConditions = numpy.array([self.launchSiteElev, 0.0])
         timeVector = numpy.arange(0, self.maxFlightTime + self.samplingTime,

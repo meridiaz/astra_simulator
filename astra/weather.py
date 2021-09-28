@@ -186,7 +186,7 @@ class environment(object):
                 type(self).__name__))
 
 
-class soundingEnvironment(environment):
+class SoundingEnvironment(environment):
     """
     Class for generating an atmospheric model from sounding data.
 
