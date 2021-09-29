@@ -40,6 +40,9 @@ logger = logging.getLogger(__name__)
 
 KNOTS_TO_MS = 0.514444
 
+ #time to collect data from sensors between each simulation in min
+TIME_BETWEEN_SIMULATIONS = 2
+
 
 class flightProfile(object):
     """
@@ -788,8 +791,8 @@ class flight(object):
         for flightNumber in range(self.numberOfSimRuns):
             logger.debug('SIMULATING FLIGHT %d' % (flightNumber + 1))
             if self.environment.realScenario:
-                self.launchSiteLat = sensor.getLat() # TODO: take both from sensors
-                self.launchSiteLon = sensor.getLon() # TODO
+                self.launchSiteLat = sensor.getLat(flightNumber) # TODO: take both from sensors
+                self.launchSiteLon = sensor.getLon(flightNumber) # TODO
                 currentDateTime = datetime.now()
             else:
                 currentDateTime = self.environment.dateAndTime
@@ -797,7 +800,7 @@ class flight(object):
             self.results.append(result)
             self.updateProgress(
                 float(flightNumber + 1) / self._totalStepsForProgress, 0)
-            #TODO: time.sleep(2*60) #dormir durante un tiempo antes sig simu
+            #TODO: time.sleep(TIME_BETWEEN_SIMULATIONS*60) #sleep before next simulation
 
         # _________________________________________________________________ #
         # POSTFLIGHT HOUSEKEEPING AND RESULT PROCESSING
@@ -1002,7 +1005,7 @@ class flight(object):
         # Monte Carlo simulations.
         # also if it is a real scenario we need to obtain wind parameters
         # from sensors
-        if self.numberOfSimRuns == 1 or self.environment.realScenario:
+        if self.numberOfSimRuns == 1:
             currentFlightWindDirection = self.environment.getWindDirection
             currentFlightWindSpeed = self.environment.getWindSpeed
         else:
@@ -1068,15 +1071,18 @@ class flight(object):
             currentTime = launchDateTime + timedelta(seconds=t)
 
             # Convert wind direction and speed to u- and v-coordinates
+            if self.environment.realScenario:
+            #TODO: maybe here I should take wind speed directly from sensors
+            #windLon, windLat = sensor.getWindSpeed()
             windLon, windLat = tools.dirspeed2uv(
                 currentFlightWindDirection(self._currentLatPosition,
-                                           self._currentLonPosition,
-                                           altitude,
-                                           currentTime),
+                                            self._currentLonPosition,
+                                            altitude,
+                                            currentTime),
                 currentFlightWindSpeed(self._currentLatPosition,
-                                       self._currentLonPosition,
-                                       altitude,
-                                       currentTime) * KNOTS_TO_MS
+                                        self._currentLonPosition,
+                                        altitude,
+                                        currentTime) * KNOTS_TO_MS
             )
 
             # Calculate how much the drift has been from the previous to the
