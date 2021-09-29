@@ -7,12 +7,12 @@ from . import simulator as sim
 # This file provides get functions to get data from sensors.
 # In case of testing this method obtain data from excel file
 
-DATA_PATH = './nombre.xlsx'
-SHEET_NAME = 'nombre_hoja'
+DATA_PATH = './sensors_data/V4.xlsx'
+SHEET_NAME = 'V4 Volcado SD RAW 9'
 #This variable must always have the values in the following order:
 # Latitude, longitude, altitude, temperature, wind direction, 
 # wind speed, pressure
-COLUMNS_NAME = ['Latitud', 'Longitud', 'Altitura', 'TempOut', 'Yaw', 'VelX', 'VelY', 'Presion']
+COLUMNS_NAME = ['Latitud', 'Longitud', 'Altura', 'TempOut', 'Yaw', 'VelX', 'VelY', 'Presion']
 __excel_data = None
 
 def __get_excel_data():
@@ -31,9 +31,10 @@ def getLat(flightNumber):
     -------
         result : float (degrees)
     """
-    if excel_data == None:
+    if __excel_data == None:
         __excel_data = __get_excel_data()
     df = pd.DataFrame(__excel_data, columns=COLUMNS_NAME[0])
+    print("numero de registro a consultar:" + (flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60+2))
     return df[flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60]
 
 def getLon(flightNumber):
@@ -48,10 +49,11 @@ def getLon(flightNumber):
     -------
         result : float (degrees)
     """
-    if excel_data == None:
+    if __excel_data == None:
         __excel_data = __get_excel_data()
     df = pd.DataFrame(__excel_data, columns=COLUMNS_NAME[1])
-     return df[flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60]
+    print("numero de registro a consultar:" + (flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60+2))
+    return df[flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60]
 
 def getElev(flightNumber):
     """
@@ -65,10 +67,14 @@ def getElev(flightNumber):
     -------
         result : float (meters)
     """
-    if excel_data == None:
+    if __excel_data == None:
         __excel_data = __get_excel_data()
     df = pd.DataFrame(__excel_data, columns=COLUMNS_NAME[2])
+    print("numero de registro a consultar:" + (flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60+2))
     return df[flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60]
+
+def has_burst():
+    return eval(input('Indique si el globo ya ha explotado'))
 
 #TODO: the following functions may not be needed
 

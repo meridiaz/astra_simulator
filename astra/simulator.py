@@ -1030,10 +1030,15 @@ class flight(object):
 
         logger.debug('Beginning simulation of flight %d' % (flightNumber + 1))
 
-        self._lastFlightBurst = False #TODO sensor.hasBurst()
+        if self.environment.realScenario:
+            self._lastFlightBurst = sensor.hasBurst()
+            self._lastFlightBurstAlt = sensor.getElev(flightNumber)
+        else:
+            self._lastFlightBurst = False 
+            self._lastFlightBurstAlt = 0.0
+        
         self._floatingReached = False
         self._t_floatStart = None
-        self._lastFlightBurstAlt = 0.0
         self._lastBurstIndex = 0
         self._currentLatPosition = self.launchSiteLat
         self._currentLonPosition = self.launchSiteLon
@@ -1070,10 +1075,10 @@ class flight(object):
             # being used.
             currentTime = launchDateTime + timedelta(seconds=t)
 
-            # Convert wind direction and speed to u- and v-coordinates
-            if self.environment.realScenario:
             #TODO: maybe here I should take wind speed directly from sensors
             #windLon, windLat = sensor.getWindSpeed()
+
+            # Convert wind direction and speed to u- and v-coordinates
             windLon, windLat = tools.dirspeed2uv(
                 currentFlightWindDirection(self._currentLatPosition,
                                             self._currentLonPosition,
