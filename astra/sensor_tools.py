@@ -3,127 +3,140 @@
 
 import pandas as pd
 from . import simulator as sim
+from . import global_tools as tools
+import os
 
 # This file provides get functions to get data from sensors.
 # In case of testing this method obtain data from excel file
 
-DATA_PATH = './sensors_data/V4.xlsx'
-SHEET_NAME = 'V4 Volcado SD RAW 9'
-#This variable must always have the values in the following order:
-# Latitude, longitude, altitude, temperature, wind direction, 
-# wind speed, pressure
-COLUMNS_NAME = ['Latitud', 'Longitud', 'Altura', 'TempOut', 'Yaw', 'VelX', 'VelY', 'Presion']
-__excel_data = None
+class Sensor(object):
 
-def __get_excel_data():
-    __excel_data = pd.read_excel (DATA_PATH, sheet_name=SHEET_NAME)
-    print(__excel_data)
+    def __init__(self, data_path='astra_simulator/astra/sensors_data/V4.xlsx',
+                sheet_name='V4 Volcado SD RAW 9',
+                 columns_name=['Latitud', 'Longitud', 'Altura', 'TempOut', 'Yaw', 'VelX', 'VelY', 'Presion']):
+        self.DATA_PATH = os.path.abspath(data_path)
+        self.SHEET_NAME = sheet_name
+        #This variable must always have the values in the following order:
+        # Latitude, longitude, altitude, temperature, wind direction,
+        # wind speed, pressure
+        self.COLUMNS_NAME = columns_name
+        self.__excel_data = None
 
-def getLat(flightNumber):
-    """
-    Gets Latitude in degrees from sensors
+    def __get_excel_data(self):
+        self.__excel_data = pd.read_excel (self.DATA_PATH, sheet_name=self.SHEET_NAME)
+        print(self.__excel_data)
 
-    Parameters
-    ----------
-        flightNumber: int,  in order to take data from sensors every two minutes
+    def getLat(self, flightNumber):
+        """
+        Gets Latitude in degrees from sensors
 
-    Returns
-    -------
-        result : float (degrees)
-    """
-    if __excel_data == None:
-        __excel_data = __get_excel_data()
-    df = pd.DataFrame(__excel_data, columns=COLUMNS_NAME[0])
-    print("numero de registro a consultar:" + (flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60+2))
-    return df[flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60]
+        Parameters
+        ----------
+            flightNumber: int,  in order to take data from sensors every two minutes
 
-def getLon(flightNumber):
-    """
-    Gets longitude in degrees from sensors
+        Returns
+        -------
+            result : float (degrees)
+        """
+        if self.__excel_data == None:
+            self.__excel_data = self.__get_excel_data()
+        df = pd.DataFrame(self.__excel_data, columns=self.COLUMNS_NAME[0])
+        print("numero de registro a consultar:" + (flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60+2))
+        return df[flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60]
 
-    Parameters
-    ----------
-        flightNumber: int, in order to take data from sensors every two minutes
+    def getLon(self, flightNumber):
+        """
+        Gets longitude in degrees from sensors
 
-    Returns
-    -------
-        result : float (degrees)
-    """
-    if __excel_data == None:
-        __excel_data = __get_excel_data()
-    df = pd.DataFrame(__excel_data, columns=COLUMNS_NAME[1])
-    print("numero de registro a consultar:" + (flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60+2))
-    return df[flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60]
+        Parameters
+        ----------
+            flightNumber: int, in order to take data from sensors every two minutes
 
-def getElev(flightNumber):
-    """
-    Gets elevation in meters from sensors
+        Returns
+        -------
+            result : float (degrees)
+        """
+        if self.__excel_data == None:
+            self.__excel_data = self.__get_excel_data()
+        df = pd.DataFrame(self.__excel_data, columns=self.COLUMNS_NAME[1])
+        print("numero de registro a consultar:" + (flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60+2))
+        return df[flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60]
 
-    Parameters
-    ----------
-        flightNumber: int, in order to take data from sensors every two minutes
+    def getElev(self, flightNumber):
+        """
+        Gets elevation in meters from sensors
 
-    Returns
-    -------
-        result : float (meters)
-    """
-    if __excel_data == None:
-        __excel_data = __get_excel_data()
-    df = pd.DataFrame(__excel_data, columns=COLUMNS_NAME[2])
-    print("numero de registro a consultar:" + (flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60+2))
-    return df[flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60]
+        Parameters
+        ----------
+            flightNumber: int, in order to take data from sensors every two minutes
 
-def has_burst():
-    return eval(input('Indique si el globo ya ha explotado'))
+        Returns
+        -------
+            result : float (meters)
+        """
+        if self.__excel_data == None:
+            self.__excel_data = self.__get_excel_data()
+        df = pd.DataFrame(self.__excel_data, columns=self.COLUMNS_NAME[2])
+        print("numero de registro a consultar:" + (flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60+2))
+        return df[flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60]
 
-#TODO: the following functions may not be needed
+    def has_burst(self):
+        return eval(input('Indique si el globo ya ha explotado'))
 
-def getTemperature():
-    """
-    Gets temperature in degrees celsius from sensors
+    def getWinduvSpeed(self):
+        dlat = -2*10**(-6) #grados/seg
+        dlong = -6*10**(-6) #grados/seg
+        return tools.deg2m(dlat, dlong, 39.573174) #ya en m/s
 
-    Parameters
-    ----------
-        None
 
-    Returns
-    -------
-        result : float (degrees celsius)
-    """
-    if excel_data == None:
-        __excel_data = __get_excel_data()
-    return pd.DataFrame(__excel_data, columns=COLUMNS_NAME[3])
+    #TODO: the following functions may not be needed
 
-def getWindDirection():
-    """
-    Gets wind direction in degrees clockwise from north from sensors
+    def getTemperature(self):
+        """
+        Gets temperature in degrees celsius from sensors
 
-    Parameters
-    ----------
-        None
+        Parameters
+        ----------
+            None
 
-    Returns
-    -------
-        result : float (degrees from north)
-    """
-    if excel_data == None:
-        __excel_data = __get_excel_data()
-    return pd.DataFrame(__excel_data, columns=COLUMNS_NAME[4])
+        Returns
+        -------
+            result : float (degrees celsius)
+        """
+        if self.excel_data == None:
+            self.__excel_data = self.__get_excel_data()
+        return pd.DataFrame(self.__excel_data, columns=self.COLUMNS_NAME[3])
 
-def getPressure():
-    """
-    Gets Pressure in milibar from sensors
+    def getWindDirection(self):
+        """
+        Gets wind direction in degrees clockwise from north from sensors
 
-    Parameters
-    ----------
-        None
+        Parameters
+        ----------
+            None
 
-    Returns
-    -------
-        result : float (milibar)
-    """
-    if excel_data == None:
-        __excel_data = __get_excel_data()
-    return pd.DataFrame(__excel_data, columns=COLUMNS_NAME[0])
-    
+        Returns
+        -------
+            result : float (degrees from north)
+        """
+        if self.excel_data == None:
+            self.__excel_data = self.__get_excel_data()
+        return pd.DataFrame(self.__excel_data, columns=self.COLUMNS_NAME[4])
+
+    def getPressure(self):
+        """
+        Gets Pressure in milibar from sensors
+
+        Parameters
+        ----------
+            None
+
+        Returns
+        -------
+            result : float (milibar)
+        """
+        if self.excel_data == None:
+            self.__excel_data = self.__get_excel_data()
+        return pd.DataFrame(self.__excel_data, columns=self.COLUMNS_NAME[0])
+
 

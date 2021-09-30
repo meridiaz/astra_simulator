@@ -20,14 +20,16 @@ from six.moves import range, builtins
 import numpy
 from scipy.integrate import odeint
 from . import flight_tools as ft
-from .weather import forecastEnvironment, soundingEnvironment
+from .weather import forecastEnvironment, realEnvironment, soundingEnvironment
 from . import global_tools as tools
 from . import drag_helium
 from . import available_balloons_parachutes
+from .sensor_tools import Sensor
 import json
-import time 
-from . import sensor_tools as sensor
-#TODO: fix class and function names that do not follow convention
+import time
+
+
+# TODO: fix class and function names that do not follow convention
 # Pass through the @profile decorator if line profiler (kernprof) is not in use
 try:
     builtins.profile
@@ -40,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 KNOTS_TO_MS = 0.514444
 
- #time to collect data from sensors between each simulation in min
+#time to collect data from sensors between each simulation in min
 TIME_BETWEEN_SIMULATIONS = 2
 
 
@@ -540,8 +542,8 @@ class flight(object):
     @environment.setter
     def environment(self, new_environment):
         if new_environment:
-
-            if not new_environment._weatherLoaded:
+            #TODO: modified if condition
+            if not new_environment._weatherLoaded and not new_environment.realScenario:
                 try:
                     new_environment.load(self.updateProgress)
                 except:
@@ -553,7 +555,7 @@ class flight(object):
             self.launchSiteElev = new_environment.launchSiteElev
 
             # Check if GFS is being used
-            if isinstance(new_environment, forecastEnvironment):
+            if isinstance(new_environment, forecastEnvironment) and not new_environment.realScenario:
                 self._usingGFS = True
             else:
                 self._usingGFS = False
@@ -786,6 +788,8 @@ class flight(object):
 
         self.updateProgress(0.0, 0)
 
+        sensor = Sensor()
+
         # _________________________________________________________________ #
         # RUN THE FLIGHT SIMULATION
         for flightNumber in range(self.numberOfSimRuns):
@@ -843,7 +847,7 @@ class flight(object):
                 self._parachuteCD.append(0.9 + 0.2 * numpy.random.random() *
                                          (-1) ** round(numpy.random.random()))
                 #calculate burst diameter with weibull probability density
-                if self._weibull_lambd a== '?' and self._weibull_k == '?':
+                if self._weibull_lambda == 0.0 and self._weibull_k == 0.0:
                     self._burstDiameter.append(
                         available_balloons_parachutes.balloons[self.balloonModel][1])
                 else:
@@ -851,7 +855,9 @@ class flight(object):
                     self._weibull_lambda *
                     numpy.random.weibull(self._weibull_k))
                 # Perturb the wind for Monte Carlo.
-            self.environment.perturbWind(numberOfSimRuns)
+            #TODO added if condition
+            if not self.environment.realScenario:
+                self.environment.perturbWind(numberOfSimRuns)
 
     # @profile
     def _preflight(self, launchDateTime):
@@ -1005,7 +1011,7 @@ class flight(object):
         # Monte Carlo simulations.
         # also if it is a real scenario we need to obtain wind parameters
         # from sensors
-        if self.numberOfSimRuns == 1:
+        if self.numberOfSimRuns == 1 or self.environment.realScenario:
             currentFlightWindDirection = self.environment.getWindDirection
             currentFlightWindSpeed = self.environment.getWindSpeed
         else:
@@ -1076,19 +1082,24 @@ class flight(object):
             currentTime = launchDateTime + timedelta(seconds=t)
 
             #TODO: maybe here I should take wind speed directly from sensors
-            #windLon, windLat = sensor.getWindSpeed()
 
-            # Convert wind direction and speed to u- and v-coordinates
-            windLon, windLat = tools.dirspeed2uv(
-                currentFlightWindDirection(self._currentLatPosition,
+            if self.environment.realScenario:
+                windLon, windLat = currentFlightWindDirection(self._currentLatPosition,
+                                                self._currentLonPosition,
+                                                altitude,
+                                                currentTime)
+            else:
+                # Convert wind direction and speed to u- and v-coordinates
+                windLon, windLat = tools.dirspeed2uv(
+                    currentFlightWindDirection(self._currentLatPosition,
+                                                self._currentLonPosition,
+                                                altitude,
+                                                currentTime),
+                    currentFlightWindSpeed(self._currentLatPosition,
                                             self._currentLonPosition,
                                             altitude,
-                                            currentTime),
-                currentFlightWindSpeed(self._currentLatPosition,
-                                        self._currentLonPosition,
-                                        altitude,
-                                        currentTime) * KNOTS_TO_MS
-            )
+                                            currentTime) * KNOTS_TO_MS
+                )
 
             # Calculate how much the drift has been from the previous to the
             # current iteration, convert it to degrees and add it up to the
@@ -1310,14 +1321,18 @@ class flight(object):
             # work out its location
             currentTime = launchDateTime + timedelta(
                 seconds=float(eachTime))
-            # Gather wind speed and convert to m/s
-            windSpeed = currentFlightWindSpeed(latitudeProfile[-1],
-                longitudeProfile[-1], eachAlt, currentTime) * KNOTS_TO_MS
-            # Convert the wind to u- and v-coordinates
-            windLon, windLat = tools.dirspeed2uv(
-                currentFlightWindDirection(latitudeProfile[-1],
-                    longitudeProfile[-1], eachAlt, currentTime),
-                windSpeed)
+            if self.environment.realScenario:
+                windLon, windLat = currentFlightWindDirection(latitudeProfile[-1],
+                    longitudeProfile[-1], eachAlt, currentTime)
+            else:
+                # Gather wind speed and convert to m/s
+                windSpeed = currentFlightWindSpeed(latitudeProfile[-1],
+                    longitudeProfile[-1], eachAlt, currentTime) * KNOTS_TO_MS
+                # Convert the wind to u- and v-coordinates
+                windLon, windLat = tools.dirspeed2uv(
+                    currentFlightWindDirection(latitudeProfile[-1],
+                        longitudeProfile[-1], eachAlt, currentTime),
+                    windSpeed)
             # Store the drift in meters (this is the distance between the
             # LAUNCH SITE and the current location)
             lastDriftLat += windLat * self.samplingTime

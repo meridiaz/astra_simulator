@@ -22,6 +22,7 @@ from scipy.interpolate import UnivariateSpline
 from . import wind_time_perturbation
 from. import wind_space_perturbation
 from . import global_tools as tools
+from . import sensor_tools as sensor
 from . import GFS
 from types import MethodType
 import os
@@ -116,7 +117,7 @@ class environment(object):
         self.dateAndTime = dateAndTime
         self.UTC_offset = UTC_offset
         self.debugging = debugging
-        self.realScenario=realScenario
+        self.realScenario = realScenario
 
         self._UTC_time = None
 
@@ -186,7 +187,7 @@ class environment(object):
                 type(self).__name__))
 
 
-class SoundingEnvironment(environment):
+class soundingEnvironment(environment):
     """
     Class for generating an atmospheric model from sounding data.
 
@@ -704,94 +705,7 @@ class SoundingEnvironment(environment):
             self.getMCWindSpeed.append(self.make_perturbedWind(devTime, devSpace,
                 randChance, 'speed'))
 
-        return None
-
-class realEnvironment(forecastEnvironment):   
-    """
-    Class responsible for creating a real environment in which data is 
-    taken from sensors.
-
-    Parameters
-    ----------
-    launchSiteLat : float
-        latitude of the launch site [deg]
-    launchSiteLon : float
-        longitude of the launch site [deg]
-    launchSiteElev : float
-        elevation of the launch site above Mean Sea Level [m]
-    dateAndTime : :obj:`datetime.datetime`
-        The launch time
-    UTC_offset : float
-        the offset in hours between the current time zone and UTC (for example,
-        Florida in winter has a UTC_offset = -5)
-    inflationTemperature : float
-        the ambient temperature during the balloon inflation [degC]
-   
-    [forceNonHD] : bool (default False)
-        if TRUE, the weather forecast download will be forced to a lower
-        resolution (i.e. 1deg x 1deg)
-    [forecastDuration] : float (default 4)
-        The number of hours from dateAndTime for which to download weather data
-    [use_async] : bool (default True)
-        Use an asynchronous request for downloads. This should speed up the
-        download, but may incur larger memory overhead for large forecastDuration.
-    [requestSimultaneous] : bool (default True)
-        If True, populate a dictionary of responses from the web download
-        requests, then process the data. If False, each response will be
-        removed once the data has been processed: This has better memory
-        overhead for large ForecastDuration, but is slower, and does not work
-        with asynchronous requesting (use_async)
-    [debug] : bool, optional (default False)
-        If TRUE, all the information available will be logged
-    [log_to_file]: bool, optional (default False)
-         If true, all error and debug logs will be stored in an error.log file
-    [progressHandler] : function, or None (default None)
-        Progress for each downloaded parameter (in %) will be passed to this
-        function, if provided.
-    [load_on_init] : bool, optional (default False)
-        If True, the forecast will be downloaded when the environment object is
-        created. This is set to False by default, as the :obj:`flight` object
-        should preferably be used to load the forecast (input validation and
-        preflight checks should be done before expensive data download) 
-     realScenario: bool (default True in this class)
-        indicates if the enviroment uses forecast data or directly 
-        from de sensors   
-    """
-    
-    def __init__(self,
-                 launchSiteLat,
-                 launchSiteLon,
-                 launchSiteElev,
-                 dateAndTime,
-                 UTC_offset=0,
-                 inflationTemperature=0.0,
-                 debugging=False,             
-                 load_on_init=False):
-               
-        super(realEnvironment, self).__init__(
-            inflationTemperature=inflationTemperature,
-            launchSiteLat=launchSiteLat,
-            launchSiteLon=launchSiteLon,
-            launchSiteElev=launchSiteElev,
-            dateAndTime=dateAndTime,
-            UTC_offset=UTC_offset,
-            debugging=debugging,
-            load_on_init=load_on_init
-            realScenario=True)
-        # es necesario llamar a load antes de comenzar 
-        # las simulaciones
-        
-    # it is not required to override the methos except for those
-    # related to wind parameters: speed and direction
-
-    def getWindDirection(*args):
-        logger.debug('Taking wind direction from sensors...')
-        return collectWindDirection()
-
-    def getWindSpeed(*args):
-        logger.debug('Taking wind speed from sensors...')
-        return collectWindSpeed()
-            
+        return None         
         
 
 class forecastEnvironment(environment):
@@ -840,6 +754,8 @@ class forecastEnvironment(environment):
         created. This is set to False by default, as the :obj:`flight` object
         should preferably be used to load the forecast (input validation and
         preflight checks should be done before expensive data download) 
+    [realScenario] : bool, optional (default False)
+        If True, we collect some data from sensors
 
     See Also
     --------
@@ -878,7 +794,8 @@ class forecastEnvironment(environment):
                  requestSimultaneous=True,
                  debugging=False,
                  progressHandler=None,
-                 load_on_init=False):
+                 load_on_init=False,
+                 realScenario=False):
         """
         Initialize the forecastEnvironment object
         """
@@ -887,6 +804,7 @@ class forecastEnvironment(environment):
         self.forecastDuration = forecastDuration
         self.use_async = use_async
         self.requestSimultaneous = requestSimultaneous
+        self.realScenario = realScenario
 
         self._GFSmodule = None
 
@@ -900,7 +818,8 @@ class forecastEnvironment(environment):
             dateAndTime=dateAndTime,
             UTC_offset=UTC_offset,
             debugging=debugging,
-            load_on_init=load_on_init)
+            load_on_init=load_on_init, 
+            realScenario=realScenario)
 
     @profile
     def load(self, progressHandler=None):
@@ -1138,3 +1057,98 @@ class forecastEnvironment(environment):
         for _ in numpy.arange(numberOfFlights):
             self.getMCWindDirection.append(perturbedWindDirection)
             self.getMCWindSpeed.append(perturbedWindSpeed)
+
+class realEnvironment(forecastEnvironment):   
+    """
+    Class responsible for creating a real environment in which data is 
+    taken from sensors.
+
+    Parameters
+    ----------
+    launchSiteLat : float
+        latitude of the launch site [deg]
+    launchSiteLon : float
+        longitude of the launch site [deg]
+    launchSiteElev : float
+        elevation of the launch site above Mean Sea Level [m]
+    dateAndTime : :obj:`datetime.datetime`
+        The launch time
+    UTC_offset : float
+        the offset in hours between the current time zone and UTC (for example,
+        Florida in winter has a UTC_offset = -5)
+    inflationTemperature : float
+        the ambient temperature during the balloon inflation [degC]
+   
+    [forceNonHD] : bool (default False)
+        if TRUE, the weather forecast download will be forced to a lower
+        resolution (i.e. 1deg x 1deg)
+    [forecastDuration] : float (default 4)
+        The number of hours from dateAndTime for which to download weather data
+    [use_async] : bool (default True)
+        Use an asynchronous request for downloads. This should speed up the
+        download, but may incur larger memory overhead for large forecastDuration.
+    [requestSimultaneous] : bool (default True)
+        If True, populate a dictionary of responses from the web download
+        requests, then process the data. If False, each response will be
+        removed once the data has been processed: This has better memory
+        overhead for large ForecastDuration, but is slower, and does not work
+        with asynchronous requesting (use_async)
+    [debug] : bool, optional (default False)
+        If TRUE, all the information available will be logged
+    [log_to_file]: bool, optional (default False)
+         If true, all error and debug logs will be stored in an error.log file
+    [progressHandler] : function, or None (default None)
+        Progress for each downloaded parameter (in %) will be passed to this
+        function, if provided.
+    [load_on_init] : bool, optional (default False)
+        If True, the forecast will be downloaded when the environment object is
+        created. This is set to False by default, as the :obj:`flight` object
+        should preferably be used to load the forecast (input validation and
+        preflight checks should be done before expensive data download) 
+     [realScenario] : bool, optional (default False)
+        If True, we collect some data from sensors
+    """
+    
+    def __init__(self,
+                 launchSiteLat,
+                 launchSiteLon,
+                 launchSiteElev,
+                 dateAndTime,
+                 UTC_offset=0,
+                 inflationTemperature=0.0,
+                 debugging=False,             
+                 load_on_init=False,
+                 realScenario=True):
+               
+        super(realEnvironment, self).__init__(
+            inflationTemperature=inflationTemperature,
+            launchSiteLat=launchSiteLat,
+            launchSiteLon=launchSiteLon,
+            launchSiteElev=launchSiteElev,
+            dateAndTime=dateAndTime,
+            UTC_offset=UTC_offset,
+            debugging=debugging,
+            load_on_init=load_on_init,
+            realScenario=realScenario)
+        # es necesario llamar a load antes de comenzar 
+        # las simulaciones
+        
+    # it is not required to override the methos except for those
+    # related to wind parameters: speed and direction
+    # due to an error in dns server it is neccesary to define
+    # getPressure and getTemperature methods using ISA eqs.
+    def getPressure(self, lat, lon, alt, time):
+        _, _, _, pres, _ = tools.ISAatmosphere(altitude=alt)
+        return pres
+
+    def getTemperature(self, lat, lon, alt, time):
+        _, temp, _, _, _ = tools.ISAatmosphere(altitude=alt)
+        return temp
+
+    def getWindDirection(self, lat, lon, alt, time):
+        logger.debug('Taking wind direction from sensors...')
+        return sensor.getWinduvSpeed()
+
+    def getWindSpeed(self, lat, lon, alt, time):
+        logger.debug('Taking wind speed from sensors...')
+        return sensor.getWinduvSpeed()

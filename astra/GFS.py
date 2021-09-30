@@ -383,7 +383,6 @@ class GFS_Handler(object):
             requestURL = self._get_NOAA_REST_url(requestVar, requestLongitude, cycle, requestTime)
 
             logger.debug('Requesting URL: %s' % requestURL)
-
             try:
                 HTTPresponse = urlopen(requestURL)
                 response = HTTPresponse.read().decode('utf-8')
