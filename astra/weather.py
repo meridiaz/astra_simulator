@@ -22,7 +22,7 @@ from scipy.interpolate import UnivariateSpline
 from . import wind_time_perturbation
 from. import wind_space_perturbation
 from . import global_tools as tools
-from . import sensor_tools as sensor
+from .sensor_tools import Sensor
 from . import GFS
 from types import MethodType
 import os
@@ -1145,10 +1145,34 @@ class realEnvironment(forecastEnvironment):
         _, temp, _, _, _ = tools.ISAatmosphere(altitude=alt)
         return temp
 
+
+    def getDensity(self, lat, lon, alt, time):
+        # dens = P[mb]*M/(R * T)
+        # Extra definitions for derived quantities (density and viscosity)
+        AirMolecMass = 0.02896
+        GasConstant = 8.31447
+
+        pres = self.getPressure(lat, lon, alt, time)
+        temp =  self.getTemperature(lat, lon, alt, time)
+        return pres * 100 * AirMolecMass / (GasConstant * tools.c2kel(temp))
+
+    def getViscosity(self, lat, lon, alt, time):
+        # gasses viscosity: mu[cP] = Mu0 * (a/b) * (T/T0)^(3/2)
+        # where a = 0,555*T0 + C y b = 0,555*T + C
+        # 1 poise = 100 cp = 0.1 Pa*s
+        standardTempRankine = tools.c2kel(15) * (9. / 5)
+        Mu0 = 0.01827  # Mu 0 (15 deg) [cP]
+        C = 120  # Sutherland's Constant
+        tempRankine = tools.c2kel(self.getTemperature(lat, lon, alt, time)) * (9. / 5)
+        TTO = (tempRankine / standardTempRankine) ** 1.5  # T/TO [Rankine/Rankine]
+        TR = ((0.555 * standardTempRankine) + C) / ((0.555 * tempRankine) + C)
+        vcP = Mu0 * TTO * TR
+        return vcP / 1000.
+
     def getWindDirection(self, lat, lon, alt, time):
         logger.debug('Taking wind direction from sensors...')
-        return sensor.getWinduvSpeed()
+        return Sensor.getWinduvSpeed()
 
     def getWindSpeed(self, lat, lon, alt, time):
         logger.debug('Taking wind speed from sensors...')
-        return sensor.getWinduvSpeed()
+        return Sensor.getWinduvSpeed()

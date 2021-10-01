@@ -30,6 +30,7 @@ MIXEDGAS_MOLECULAR_MASS = {
 def density(ambientPressMbar, gasMolecularMass,
     ambientTempC):
     R = 8.31447 # m^3Pa/mol K
+    # returns density in [kg/m3]
     return ambientPressMbar * 100 * gasMolecularMass / (
         R * (ambientTempC + 273.15))
 

@@ -11,7 +11,7 @@ for usage.
 University of Southampton
 """
 from math import pi
-from datetime import timedelta
+from datetime import timedelta, datetime
 from sys import stdout
 import os
 import logging
@@ -800,12 +800,12 @@ class flight(object):
                 currentDateTime = datetime.now()
             else:
                 currentDateTime = self.environment.dateAndTime
-            result, _ = self.fly(flightNumber, currentDateTime, runPreflight=False)
+            result, _ = self.fly(flightNumber, currentDateTime, sensor, runPreflight=False)
             self.results.append(result)
             self.updateProgress(
                 float(flightNumber + 1) / self._totalStepsForProgress, 0)
-            #TODO: time.sleep(TIME_BETWEEN_SIMULATIONS*60) #sleep before next simulation
-
+            #sleep before next simulation
+            time.sleep(TIME_BETWEEN_SIMULATIONS * 60)
         # _________________________________________________________________ #
         # POSTFLIGHT HOUSEKEEPING AND RESULT PROCESSING
         self._hasRun = True
@@ -950,7 +950,7 @@ class flight(object):
         logger.debug('Preflight completed!')
 
     # @profile
-    def fly(self, flightNumber, launchDateTime, runPreflight=True):
+    def fly(self, flightNumber, launchDateTime, sensor, runPreflight=True):
         """
         Execute a single simulation.
         It should be run N times, where N is the number of simulation runs
@@ -1037,7 +1037,7 @@ class flight(object):
         logger.debug('Beginning simulation of flight %d' % (flightNumber + 1))
 
         if self.environment.realScenario:
-            self._lastFlightBurst = sensor.hasBurst()
+            self._lastFlightBurst = sensor.has_burst(flightNumber)
             self._lastFlightBurstAlt = sensor.getElev(flightNumber)
         else:
             self._lastFlightBurst = False 
@@ -1278,7 +1278,7 @@ class flight(object):
         # will be trimmed later on.
         if self.environment.realScenario:
             #TODO: take elev and ascent rate from sensors
-            initialConditions = numpy.array([sensor.getElev(), getCurrentAscentRate()])
+            initialConditions = numpy.array([sensor.getElev(flightNumber), sensor.getVerticalSpeed(flightNumber)])
         else:
             initialConditions = numpy.array([self.launchSiteElev, 0.0])
         timeVector = numpy.arange(0, self.maxFlightTime + self.samplingTime,
