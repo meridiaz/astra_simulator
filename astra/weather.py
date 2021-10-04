@@ -795,7 +795,8 @@ class forecastEnvironment(environment):
                  debugging=False,
                  progressHandler=None,
                  load_on_init=False,
-                 realScenario=False):
+                 realScenario=False, 
+                 log_to_file=False):
         """
         Initialize the forecastEnvironment object
         """
@@ -1118,7 +1119,8 @@ class realEnvironment(forecastEnvironment):
                  inflationTemperature=0.0,
                  debugging=False,             
                  load_on_init=False,
-                 realScenario=True):
+                 realScenario=True,
+                 log_to_file=False):
                
         super(realEnvironment, self).__init__(
             inflationTemperature=inflationTemperature,
@@ -1129,7 +1131,8 @@ class realEnvironment(forecastEnvironment):
             UTC_offset=UTC_offset,
             debugging=debugging,
             load_on_init=load_on_init,
-            realScenario=realScenario)
+            realScenario=realScenario, 
+            log_to_file=log_to_file)
         # es necesario llamar a load antes de comenzar 
         # las simulaciones
         
@@ -1137,18 +1140,18 @@ class realEnvironment(forecastEnvironment):
     # related to wind parameters: speed and direction
     # due to an error in dns server it is neccesary to define
     # getPressure and getTemperature methods using ISA eqs.
+    """
     def getPressure(self, lat, lon, alt, time):
-        _, _, _, pres, _ = tools.ISAatmosphere(altitude=alt)
+        _, _, _, pres, _ = tools.ISAatmosphere(altitude=tools.m2feet(alt))
         return pres
 
     def getTemperature(self, lat, lon, alt, time):
-        _, temp, _, _, _ = tools.ISAatmosphere(altitude=alt)
+        _, temp, _, _, _ = tools.ISAatmosphere(altitude=tools.m2feet(alt))
         return temp
 
 
     def getDensity(self, lat, lon, alt, time):
-        # dens = P[mb]*M/(R * T)
-        # Extra definitions for derived quantities (density and viscosity)
+        # dens[kg/m^3] = P[mb]*M/(R * T)
         AirMolecMass = 0.02896
         GasConstant = 8.31447
 
@@ -1168,11 +1171,10 @@ class realEnvironment(forecastEnvironment):
         TR = ((0.555 * standardTempRankine) + C) / ((0.555 * tempRankine) + C)
         vcP = Mu0 * TTO * TR
         return vcP / 1000.
-
+    
     def getWindDirection(self, lat, lon, alt, time):
-        logger.debug('Taking wind direction from sensors...')
         return Sensor.getWinduvSpeed()
 
     def getWindSpeed(self, lat, lon, alt, time):
-        logger.debug('Taking wind speed from sensors...')
         return Sensor.getWinduvSpeed()
+    """

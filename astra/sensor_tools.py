@@ -32,7 +32,7 @@ class Sensor(object):
     def __get_excel_data(self):
         self.__excel_data = pd.read_excel(self.DATA_PATH, sheet_name=self.SHEET_NAME)
         self.__loaded_data = True
-        logger.debug(self.__excel_data)
+        #logger.debug(self.__excel_data)
 
     def getLat(self, flightNumber):
         """
@@ -74,9 +74,9 @@ class Sensor(object):
         logger.debug("Numero de registro a consultar:" + str(flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60))
         return self.__excel_data[self.COLUMNS_NAME[1]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60]
 
-    def getElev(self, flightNumber):
+    def getHeight(self, flightNumber):
         """
-        Gets elevation in meters from sensors
+        Gets height in meters from sensors
 
         Parameters
         ----------
@@ -107,7 +107,8 @@ class Sensor(object):
     def getVerticalSpeed(self, flightNumber):
         # TODO: this method should not recieve flight number
         data = pd.read_excel(self.DATA_PATH, sheet_name="Vel.Vertical V4")
-        logger.debug("Reading vertical speed sheet")
+        logger.debug("Reading vertical speed sheet, elev:" +
+                     str(data['Vel. (m/s)'][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60]))
         return data['Vel. (m/s)'][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60]
 
     #TODO: the following functions may not be needed

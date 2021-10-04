@@ -542,8 +542,8 @@ class flight(object):
     @environment.setter
     def environment(self, new_environment):
         if new_environment:
-            #TODO: modified if condition
-            if not new_environment._weatherLoaded and not new_environment.realScenario:
+            #TODO: modified if condition: and not new_environment.realScenario
+            if not new_environment._weatherLoaded :
                 try:
                     new_environment.load(self.updateProgress)
                 except:
@@ -555,7 +555,8 @@ class flight(object):
             self.launchSiteElev = new_environment.launchSiteElev
 
             # Check if GFS is being used
-            if isinstance(new_environment, forecastEnvironment) and not new_environment.realScenario:
+            #and not new_environment.realScenario
+            if isinstance(new_environment, forecastEnvironment) :
                 self._usingGFS = True
             else:
                 self._usingGFS = False
@@ -844,7 +845,7 @@ class flight(object):
                 self._ReBand.append(drag_helium.transitions[mcIndex, 3])
                 self._balloonReturnFraction.append(
                     0.03 + numpy.random.random() * (1 - 0.03))
-                self._parachuteCD.append(0.9 + 0.2 * numpy.random.random() *
+                self._parachuteCD.append(1.9 + 0.2 * numpy.random.random() *
                                          (-1) ** round(numpy.random.random()))
                 #calculate burst diameter with weibull probability density
                 if self._weibull_lambda == 0.0 and self._weibull_k == 0.0:
@@ -856,7 +857,7 @@ class flight(object):
                     numpy.random.weibull(self._weibull_k))
                 # Perturb the wind for Monte Carlo.
             #TODO added if condition
-            if not self.environment.realScenario:
+            #if not self.environment.realScenario:
                 self.environment.perturbWind(numberOfSimRuns)
 
     # @profile
@@ -1011,7 +1012,7 @@ class flight(object):
         # Monte Carlo simulations.
         # also if it is a real scenario we need to obtain wind parameters
         # from sensors
-        if self.numberOfSimRuns == 1 or self.environment.realScenario:
+        if self.numberOfSimRuns == 1:
             currentFlightWindDirection = self.environment.getWindDirection
             currentFlightWindSpeed = self.environment.getWindSpeed
         else:
@@ -1038,7 +1039,7 @@ class flight(object):
 
         if self.environment.realScenario:
             self._lastFlightBurst = sensor.has_burst(flightNumber)
-            self._lastFlightBurstAlt = sensor.getElev(flightNumber)
+            self._lastFlightBurstAlt = sensor.getHeight(flightNumber)# + self.environment.launchSiteElev
         else:
             self._lastFlightBurst = False 
             self._lastFlightBurstAlt = 0.0
@@ -1046,8 +1047,13 @@ class flight(object):
         self._floatingReached = False
         self._t_floatStart = None
         self._lastBurstIndex = 0
+       
         self._currentLatPosition = self.launchSiteLat
         self._currentLonPosition = self.launchSiteLon
+
+        logger.debug('Lat pos %.4f, long pos: %.4f' 
+                    % (self._currentLatPosition, self._currentLonPosition))
+        
         self._currentTime = 0
         self._totalRuns = 0
 
@@ -1057,9 +1063,13 @@ class flight(object):
             vertical motion of the balloon.
             """
             self._totalRuns += 1
+            logger.debug('Run number %d' % (self._totalRuns))
+            
             # Extract inputs from array y
             altitude = y[0]
             ascentRate = y[1]
+            
+            logger.debug('Altitude %d, ascentRate: %.4f' % (altitude, ascentRate))
 
             if self.cutdown and not self._lastFlightBurst:
                 if altitude >= self.cutdownAltitude or t >= self.cutdownTimeout*3600:
@@ -1083,11 +1093,12 @@ class flight(object):
 
             #TODO: maybe here I should take wind speed directly from sensors
 
-            if self.environment.realScenario:
+            if self.environment.realScenario and False:
                 windLon, windLat = currentFlightWindDirection(self._currentLatPosition,
                                                 self._currentLonPosition,
                                                 altitude,
                                                 currentTime)
+                logger.debug("windlon: %.4f, windlat: %.4f:" %(windLon, windLat))
             else:
                 # Convert wind direction and speed to u- and v-coordinates
                 windLon, windLat = tools.dirspeed2uv(
@@ -1142,13 +1153,15 @@ class flight(object):
                 else:
                     gasMass = self._gasMassAtInflation
 
-
+                logger.debug('the balloon is currently ascending')
                 # Calculate current balloon diameter to check for burst
                 # balloon gas temperature, density, volume and diameter
+                 
                 gasTemp = tools.c2kel(self.environment.getTemperature(
                     self._currentLatPosition, self._currentLonPosition,
                     altitude, currentTime))
-                """
+                #TODO prueba a ver si mejoran resultados                    
+               
                 gasDensity = (self.excessPressureCoeff *
                     self.environment.getPressure(self._currentLatPosition,
                         self._currentLonPosition, altitude,currentTime) * 100
@@ -1156,8 +1169,12 @@ class flight(object):
                 """
                 gasDensity = self.environment.getDensity(self._currentLatPosition,
                         self._currentLonPosition, altitude, currentTime)
+                """
                 balloonVolume = gasMass / gasDensity
                 balloonDiameter = (6 * balloonVolume / pi) ** (1. / 3)
+                
+                logger.debug("gas temp: %.4f, gas dens: %.4f, balloon diameter %.4f" %
+                                (gasTemp, gasDensity, balloonDiameter))
 
                 # If floating flight, calculate the nozzle lift if the gas is
                 # being vented.
@@ -1187,6 +1204,7 @@ class flight(object):
 
                 else:
                     nozzleLift = self.nozzleLift
+                    logger.debug("nozzlelift: %.4f" % nozzleLift)
 
                 if balloonDiameter < self._burstDiameter[flightNumber]:
                     # THE BALLOON DIDN'T BURST
@@ -1224,6 +1242,10 @@ class flight(object):
                     dvdt = externalForces / self._totalAscendingMass
                     dhdt = ascentRate
 
+                    logger.debug("external forces: %.4f, ascent rate: %.4f, burst diam: %.4f \
+                        balloon drag: %.4f, train drag: %.4f" %(externalForces, ascentRate, 
+                        self._burstDiameter[flightNumber], balloonDrag, trainDrag))
+
                     return numpy.array([dhdt, dvdt])
 
                 else:
@@ -1233,6 +1255,8 @@ class flight(object):
                     # has burst, the flight is now standard.
                     self._lastFlightBurst = True
                     self._lastFlightBurstAlt = altitude
+                    logger.debug('the balloon has burst')
+
                     return numpy.array([0.0, 0.0])
 
             else:
@@ -1268,6 +1292,8 @@ class flight(object):
                 # Derivatives
                 dvdt = externalForces / self._totalDescendingMass
                 dhdt = ascentRate
+                
+                logger.debug('the balloon is currently descending')
 
                 return numpy.array([dhdt, dvdt])
 
@@ -1278,7 +1304,8 @@ class flight(object):
         # will be trimmed later on.
         if self.environment.realScenario:
             #TODO: take elev and ascent rate from sensors
-            initialConditions = numpy.array([sensor.getElev(flightNumber), sensor.getVerticalSpeed(flightNumber)])
+            initialConditions = numpy.array([sensor.getHeight(flightNumber),# + self.launchSiteElev,
+                                             sensor.getVerticalSpeed(flightNumber)])
         else:
             initialConditions = numpy.array([self.launchSiteElev, 0.0])
         timeVector = numpy.arange(0, self.maxFlightTime + self.samplingTime,
@@ -1321,7 +1348,7 @@ class flight(object):
             # work out its location
             currentTime = launchDateTime + timedelta(
                 seconds=float(eachTime))
-            if self.environment.realScenario:
+            if self.environment.realScenario and False:
                 windLon, windLat = currentFlightWindDirection(latitudeProfile[-1],
                     longitudeProfile[-1], eachAlt, currentTime)
             else:
