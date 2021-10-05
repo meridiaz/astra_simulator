@@ -1143,10 +1143,12 @@ class realEnvironment(forecastEnvironment):
     """
     def getPressure(self, lat, lon, alt, time):
         _, _, _, pres, _ = tools.ISAatmosphere(altitude=tools.m2feet(alt))
+        logger.debug("presion:%.4f" %(pres))
         return pres
 
     def getTemperature(self, lat, lon, alt, time):
         _, temp, _, _, _ = tools.ISAatmosphere(altitude=tools.m2feet(alt))
+        logger.debug("temperatura:%.4f" %(temp))
         return temp
 
 
@@ -1178,3 +1180,4 @@ class realEnvironment(forecastEnvironment):
     def getWindSpeed(self, lat, lon, alt, time):
         return Sensor.getWinduvSpeed()
     """
+    

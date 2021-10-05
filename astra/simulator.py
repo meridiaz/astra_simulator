@@ -805,8 +805,8 @@ class flight(object):
             self.results.append(result)
             self.updateProgress(
                 float(flightNumber + 1) / self._totalStepsForProgress, 0)
-            #sleep before next simulation
-            time.sleep(TIME_BETWEEN_SIMULATIONS * 60)
+            #sleep before next simulation TODO: time.sleep(TIME_BETWEEN_SIMULATIONS * 60)
+            
         # _________________________________________________________________ #
         # POSTFLIGHT HOUSEKEEPING AND RESULT PROCESSING
         self._hasRun = True
@@ -1160,7 +1160,7 @@ class flight(object):
                 gasTemp = tools.c2kel(self.environment.getTemperature(
                     self._currentLatPosition, self._currentLonPosition,
                     altitude, currentTime))
-                #TODO prueba a ver si mejoran resultados                    
+                                    
                
                 gasDensity = (self.excessPressureCoeff *
                     self.environment.getPressure(self._currentLatPosition,
@@ -1173,8 +1173,9 @@ class flight(object):
                 balloonVolume = gasMass / gasDensity
                 balloonDiameter = (6 * balloonVolume / pi) ** (1. / 3)
                 
-                logger.debug("gas temp: %.4f, gas dens: %.4f, balloon diameter %.4f" %
-                                (gasTemp, gasDensity, balloonDiameter))
+                logger.debug("gas temp: %.4f, gas dens: %.4f, balloon diameter %.4f, pres: %.4f" %
+                                (gasTemp, gasDensity, balloonDiameter, self.environment.getPressure(self._currentLatPosition,
+                        self._currentLonPosition, altitude,currentTime)))
 
                 # If floating flight, calculate the nozzle lift if the gas is
                 # being vented.
@@ -1285,10 +1286,16 @@ class flight(object):
                                                    transition))
 
                 # External Forces
+                #TODO: quitado 1 + self._balloonReturnFraction[flightNumber]
+                
                 externalForces = -self.payloadTrainWeight * 9.81 * (
                     1 + self._balloonReturnFraction[flightNumber])\
                     + parachuteDrag + trainDrag
-
+                """
+                externalForces = - 9.81 * (self.payloadTrainWeight + \
+                        self._balloonWeight* self._balloonReturnFraction[flightNumber])\
+                        + parachuteDrag + trainDrag
+                """
                 # Derivatives
                 dvdt = externalForces / self._totalDescendingMass
                 dhdt = ascentRate

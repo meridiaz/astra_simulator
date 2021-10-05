@@ -10,6 +10,10 @@ University of Southampton
 """
 from math import pi
 import numpy as np
+import logging
+
+# Error and warning logger
+logger = logging.getLogger(__name__)
 
 
 # Constants
@@ -56,10 +60,13 @@ def liftingGasMass(nozzleLift, balloonMass, ambientTempC,
     gasDensity = excessPressureCoefficient * density(ambientPressMbar,
                                                      gasMolecularMass,
                                                      ambientTempC)
+    logger.debug("densidad del gas: %.4f, presion: %.4f, ambienttemp: %.4f" 
+                %(gasDensity, ambientPressMbar, ambientTempC))
     airDensity = density(ambientPressMbar, MOLECULAR_MASS['air'], ambientTempC)
-
+    logger.debug("densidad del aire: %.4f" %(airDensity))
     balloonVolume = (nozzleLift + balloonMass) / (airDensity - gasDensity)
     gasMass = balloonVolume * gasDensity
+    logger.debug("volumen del globo: %.4f, gas mass: %.4f" % (balloonVolume, gasMass))
     balloonDiameter = (6. * balloonVolume / pi) ** (1. / 3)
 
     return [gasMass, balloonVolume, balloonDiameter]
