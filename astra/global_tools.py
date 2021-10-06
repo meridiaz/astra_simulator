@@ -242,6 +242,7 @@ def getUTCOffset(latitude, longitude, date_time):
         timestamp
     )
 
+    logger.debug("get utc offset request url" + requestURL)
 
     try:
         HTTPresponse = urlopen(requestURL)
@@ -251,10 +252,12 @@ def getUTCOffset(latitude, longitude, date_time):
     data = json.loads(HTTPresponse.read().decode('utf-8'))
     if str(data['status']) == 'OK':
         total_seconds = data['dstOffset'] + data['rawOffset']
+        logger.debug("offset in function: %.4f" % (total_seconds/3600))
         return total_seconds / 3600.
     else:
+        logger.debug("offset in function: 0" )
         return 0
-
+    
 
 def ISAatmosphere(altitude=None, temperature=None, density=None, pressure=None,
         speedOfSound=None):

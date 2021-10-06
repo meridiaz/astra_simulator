@@ -371,6 +371,12 @@ class flight(object):
         and will be updated during preflight and then once per 'flight'.
         If FALSE, progress information about the simulation will be displayed
         on the terminal or command line.
+    [forecast_wind] : bool (default True)
+        If FALSE, wind prediction will be made collecting wind speed from 
+        sensors and consider it constant along the ODE prediction at any
+        altitude and time.
+        If TRUE wind prediction will be made from forecast environmet 
+        downloaded from NOAA API.
 
     Attributes
     ----------
@@ -416,7 +422,8 @@ class flight(object):
                  outputFile='',
                  debugging=False,
                  log_to_file=False,
-                 progress_to_file=False):
+                 progress_to_file=False,
+                 forecast_wind=True):
         """
         Initialize all the parameters of the object and setup the debugging if
         required.
@@ -461,6 +468,7 @@ class flight(object):
         # Note: As setters are used in some of these variables, there is a
         # small amount of order dependency here: e.g., self.payloadtrainWeight
         # must be defined before nozzleLift 
+        self.forecast_wind = forecast_wind
         self.environment = environment                # weather object
         self.balloonGasType = balloonGasType
         self._numberOfSimRuns = numberOfSimRuns       # Don't use the setter here: circular dependency with self.balloonModel
@@ -478,6 +486,7 @@ class flight(object):
         self.cutdown = cutdown
         self.cutdownAltitude = cutdownAltitude
         self.cutdownTimeout = cutdownTimeout
+        
 
         # Set the 
         self.profileClass = flightProfile
@@ -543,7 +552,8 @@ class flight(object):
     def environment(self, new_environment):
         if new_environment:
             #TODO: modified if condition: and not new_environment.realScenario
-            if not new_environment._weatherLoaded :
+            # v2:  and self.forecast_wind
+            if not new_environment._weatherLoaded:
                 try:
                     new_environment.load(self.updateProgress)
                 except:
@@ -555,8 +565,8 @@ class flight(object):
             self.launchSiteElev = new_environment.launchSiteElev
 
             # Check if GFS is being used
-            #and not new_environment.realScenario
-            if isinstance(new_environment, forecastEnvironment) :
+            #and not new_environment.realScenario v2:  and self.forecast_wind
+            if isinstance(new_environment, forecastEnvironment):
                 self._usingGFS = True
             else:
                 self._usingGFS = False
@@ -796,8 +806,10 @@ class flight(object):
         for flightNumber in range(self.numberOfSimRuns):
             logger.debug('SIMULATING FLIGHT %d' % (flightNumber + 1))
             if self.environment.realScenario:
-                self.launchSiteLat = sensor.getLat(flightNumber) # TODO: take both from sensors
-                self.launchSiteLon = sensor.getLon(flightNumber) # TODO
+                # collect latitude and longitude from sensors each simulation 
+                # will consider launch point at this latitude and longitude
+                self.launchSiteLat = sensor.getLat(flightNumber) 
+                self.launchSiteLon = sensor.getLon(flightNumber)
                 currentDateTime = datetime.now()
             else:
                 currentDateTime = self.environment.dateAndTime
@@ -857,7 +869,7 @@ class flight(object):
                     numpy.random.weibull(self._weibull_k))
                 # Perturb the wind for Monte Carlo.
             #TODO added if condition
-            #if not self.environment.realScenario:
+            if self.forecast_wind:
                 self.environment.perturbWind(numberOfSimRuns)
 
     # @profile
@@ -1010,9 +1022,9 @@ class flight(object):
         # Use the correct wind profile according to the simulation type: a
         # standard one for deterministic simulations or a perturbed one for
         # Monte Carlo simulations.
-        # also if it is a real scenario we need to obtain wind parameters
-        # from sensors
-        if self.numberOfSimRuns == 1:
+        # also if it is a real scenario and we do not want to use a forecast
+        # we need to obtain wind parametersfrom sensors
+        if self.numberOfSimRuns == 1 or not self.forecast_wind:
             currentFlightWindDirection = self.environment.getWindDirection
             currentFlightWindSpeed = self.environment.getWindSpeed
         else:
@@ -1039,7 +1051,7 @@ class flight(object):
 
         if self.environment.realScenario:
             self._lastFlightBurst = sensor.has_burst(flightNumber)
-            self._lastFlightBurstAlt = sensor.getHeight(flightNumber)# + self.environment.launchSiteElev
+            self._lastFlightBurstAlt = sensor.getAltitude(flightNumber)
         else:
             self._lastFlightBurst = False 
             self._lastFlightBurstAlt = 0.0
@@ -1091,10 +1103,10 @@ class flight(object):
             # being used.
             currentTime = launchDateTime + timedelta(seconds=t)
 
-            #TODO: maybe here I should take wind speed directly from sensors
-
-            if self.environment.realScenario and False:
-                windLon, windLat = currentFlightWindDirection(self._currentLatPosition,
+            #collect wind speed directly from sensors if forecast_wind is set
+            # to True
+            if not self.forecast_wind:
+                windLat, windLon = currentFlightWindDirection(self._currentLatPosition,
                                                 self._currentLonPosition,
                                                 altitude,
                                                 currentTime)
@@ -1286,7 +1298,9 @@ class flight(object):
                                                    transition))
 
                 # External Forces
-                #TODO: quitado 1 + self._balloonReturnFraction[flightNumber]
+
+                # this equation assumes payload mass and balloon mass are 
+                # equal, this aproximation provides better results
                 
                 externalForces = -self.payloadTrainWeight * 9.81 * (
                     1 + self._balloonReturnFraction[flightNumber])\
@@ -1310,8 +1324,8 @@ class flight(object):
         # even if the altitude becomes negative. Negative values of altitude
         # will be trimmed later on.
         if self.environment.realScenario:
-            #TODO: take elev and ascent rate from sensors
-            initialConditions = numpy.array([sensor.getHeight(flightNumber),# + self.launchSiteElev,
+            #take elev and ascent rate from sensors
+            initialConditions = numpy.array([sensor.getAltitude(flightNumber),
                                              sensor.getVerticalSpeed(flightNumber)])
         else:
             initialConditions = numpy.array([self.launchSiteElev, 0.0])
@@ -1355,7 +1369,7 @@ class flight(object):
             # work out its location
             currentTime = launchDateTime + timedelta(
                 seconds=float(eachTime))
-            if self.environment.realScenario and False:
+            if not self.forecast_wind:
                 windLon, windLat = currentFlightWindDirection(latitudeProfile[-1],
                     longitudeProfile[-1], eachAlt, currentTime)
             else:

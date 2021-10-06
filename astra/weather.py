@@ -1173,11 +1173,11 @@ class realEnvironment(forecastEnvironment):
         TR = ((0.555 * standardTempRankine) + C) / ((0.555 * tempRankine) + C)
         vcP = Mu0 * TTO * TR
         return vcP / 1000.
-    
+    """
     def getWindDirection(self, lat, lon, alt, time):
         return Sensor.getWinduvSpeed()
 
     def getWindSpeed(self, lat, lon, alt, time):
         return Sensor.getWinduvSpeed()
-    """
+    
     

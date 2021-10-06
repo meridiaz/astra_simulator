@@ -74,9 +74,9 @@ class Sensor(object):
         logger.debug("Numero de registro a consultar:" + str(flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60))
         return self.__excel_data[self.COLUMNS_NAME[1]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60]
 
-    def getHeight(self, flightNumber):
+    def getAltitude(self, flightNumber):
         """
-        Gets height in meters from sensors
+        Gets altitude of the balloon in meters from sensors
 
         Parameters
         ----------
