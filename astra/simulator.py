@@ -27,6 +27,7 @@ from . import available_balloons_parachutes
 from .sensor_tools import Sensor
 import json
 import time
+import requests
 
 
 # TODO: fix class and function names that do not follow convention
@@ -39,6 +40,7 @@ except AttributeError:
 
 # Error and warning logger
 logger = logging.getLogger(__name__)
+
 
 KNOTS_TO_MS = 0.514444
 
@@ -1024,7 +1026,12 @@ class flight(object):
         # Monte Carlo simulations.
         # also if it is a real scenario and we do not want to use a forecast
         # we need to obtain wind parametersfrom sensors
-        if self.numberOfSimRuns == 1 or not self.forecast_wind:
+        logger.debug("TRAADZA: {} - {}".format(self.numberOfSimRuns, self.forecast_wind))
+        if not self.forecast_wind:
+            logger.debug("He entrado")
+            currentFlightWindDirection = sensor.getWinduvSpeed
+            currentFlightWindSpeed = sensor.getWinduvSpeed
+        elif self.numberOfSimRuns == 1:
             currentFlightWindDirection = self.environment.getWindDirection
             currentFlightWindSpeed = self.environment.getWindSpeed
         else:
@@ -1105,11 +1112,12 @@ class flight(object):
 
             #collect wind speed directly from sensors if forecast_wind is set
             # to True
+            logger.debug("traza 2: {}".format(self.forecast_wind))
             if not self.forecast_wind:
-                windLat, windLon = currentFlightWindDirection(self._currentLatPosition,
+                windLon, windLat = currentFlightWindDirection(self._currentLatPosition,
                                                 self._currentLonPosition,
                                                 altitude,
-                                                currentTime)
+                                                currentTime, flightNumber)
                 logger.debug("windlon: %.4f, windlat: %.4f:" %(windLon, windLat))
             else:
                 # Convert wind direction and speed to u- and v-coordinates
@@ -1367,11 +1375,10 @@ class flight(object):
         for eachAlt, eachTime in zip(solution_altitude[1:], timeVector[1:]):
             # Calculate the position of the balloon at each point and use it to
             # work out its location
-            currentTime = launchDateTime + timedelta(
-                seconds=float(eachTime))
+            currentTime = launchDateTime + timedelta(seconds=float(eachTime))
             if not self.forecast_wind:
                 windLon, windLat = currentFlightWindDirection(latitudeProfile[-1],
-                    longitudeProfile[-1], eachAlt, currentTime)
+                    longitudeProfile[-1], eachAlt, currentTime, flightNumber)
             else:
                 # Gather wind speed and convert to m/s
                 windSpeed = currentFlightWindSpeed(latitudeProfile[-1],
@@ -1437,7 +1444,32 @@ class flight(object):
         else:
             highestAltitude = self.floatingAltitude
 
+        #concatenate coordinates to request elevation to server
+        str_to_req = "|".join(
+                ["{},{}".format(
+                    latitudeProfile[i], longitudeProfile[i]
+                ) for i in range(len(latitudeProfile))]
+            )
+        #request each elevation to local server
+        elevations = []
+        for i in range(len(latitudeProfile)):
+            r = requests.get('http://localhost:5000/v1/test-dataset?locations=' + 
+                            str(latitudeProfile[i]) + "," + str(longitudeProfile[i]))
+            elevations.append(r.json()['results'][0]['elevation'])
+        #r = requests.get('http://localhost:5000/v1/test-dataset?locations=' + str_to_req)
+        #elevations = [r.json()['results'][i]['elevation'] for i in range(len(latitudeProfile))]
+        #remove coordinates and elevation which are not correct
+        for i in range(1, len(latitudeProfile)):
+            #request elevation for current coordinate
+            if solution_altitude[i] < elevations[i]:
+                end_index = i
+                break
+        latitudeProfile = latitudeProfile[0:end_index]
+        longitudeProfile = longitudeProfile[0:end_index]
+        solution_altitude = solution_altitude[0:end_index]
+        timeVector = timeVector[0:end_index]
 
+        #build flightProfile in order to make kml file
         resultProfile = flightProfile(launchDateTime, self.nozzleLift,
             flightNumber + 1, timeVector, latitudeProfile,
                   longitudeProfile, solution_altitude, index,
@@ -1744,8 +1776,9 @@ class flight(object):
         astra.simulator.flight, self.outputFile
         """
         baseName, data_format = os.path.splitext(self.outputFile)
-
+        logger.debug("outpur format:" + data_format)
         if data_format == '':
+           
             # In the case that no extension is provided, use the base name as
             # the folder name as write all types to this file
             try:
@@ -1757,6 +1790,7 @@ class flight(object):
             for data_format in ['json', 'kml', 'kmz', 'csv', 'csv.zip']:
                 path = os.path.join(baseName, 'out' + '.' + data_format)
                 try:
+                    
                     self.write(path)
                 except:
                     logger.exception("flight simulator failed to write output {} file".format(data_format))

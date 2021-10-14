@@ -1121,6 +1121,7 @@ class realEnvironment(forecastEnvironment):
                  load_on_init=False,
                  realScenario=True,
                  log_to_file=False):
+        self.sensor = Sensor()
                
         super(realEnvironment, self).__init__(
             inflationTemperature=inflationTemperature,
@@ -1174,10 +1175,13 @@ class realEnvironment(forecastEnvironment):
         vcP = Mu0 * TTO * TR
         return vcP / 1000.
     """
-    def getWindDirection(self, lat, lon, alt, time):
-        return Sensor.getWinduvSpeed()
 
-    def getWindSpeed(self, lat, lon, alt, time):
-        return Sensor.getWinduvSpeed()
+    def getWindDirectionS(self, lat, lon, alt, time, flightNumber):
+        logger.debug("cogiendo viento en real class environment")
+        return self.sensor.getWinduvSpeed(flightNumber)
+
+    def getWindSpeedS(self, lat, lon, alt, time, flightNumber):
+        logger.debug("cogiendo viento en real class environment")
+        return self.sensor.getWinduvSpeed(flightNumber)
     
     

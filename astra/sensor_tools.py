@@ -48,10 +48,10 @@ class Sensor(object):
         """
         if not self.__loaded_data:
             self.__get_excel_data()
-        logger.debug("Datos a extraer: ")
-        logger.debug(self.__excel_data[self.COLUMNS_NAME[0]][flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60])
+        #logger.debug("Datos a extraer: ")
+        #logger.debug(self.__excel_data[self.COLUMNS_NAME[0]][flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60])
         #df = pd.DataFrame(self.__excel_data, columns=[self.COLUMNS_NAME[0]])
-        logger.debug("Numero de registro a consultar:" + str(flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60))
+        #logger.debug("Numero de registro a consultar:" + str(flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60))
         return self.__excel_data[self.COLUMNS_NAME[0]][flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60]
 
     def getLon(self, flightNumber):
@@ -68,10 +68,10 @@ class Sensor(object):
         """
         if not self.__loaded_data:
             self.__excel_data = self.__get_excel_data()
-        logger.debug("Datos a extraer: ")
-        logger.debug(self.__excel_data[self.COLUMNS_NAME[1]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60])
+        #logger.debug("Datos a extraer: ")
+        #logger.debug(self.__excel_data[self.COLUMNS_NAME[1]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60])
         # df = pd.DataFrame(self.__excel_data, columns=[self.COLUMNS_NAME[1]])
-        logger.debug("Numero de registro a consultar:" + str(flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60))
+        #logger.debug("Numero de registro a consultar:" + str(flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60))
         return self.__excel_data[self.COLUMNS_NAME[1]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60]
 
     def getAltitude(self, flightNumber):
@@ -88,10 +88,10 @@ class Sensor(object):
         """
         if not self.__loaded_data:
             self.__excel_data = self.__get_excel_data()
-        logger.debug("Datos a extraer: ")
-        logger.debug(self.__excel_data[self.COLUMNS_NAME[2]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60])
+        #logger.debug("Datos a extraer: ")
+        #logger.debug(self.__excel_data[self.COLUMNS_NAME[2]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60])
         # df = pd.DataFrame(self.__excel_data, columns=[self.COLUMNS_NAME[2]])
-        logger.debug("Numero de registro a consultar:" + str(flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60))
+        #logger.debug("Numero de registro a consultar:" + str(flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60))
         return self.__excel_data[self.COLUMNS_NAME[2]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60]
 
     def has_burst(self, flightNumber):
@@ -99,10 +99,22 @@ class Sensor(object):
         #return eval(input('Indique si el globo ya ha explotado'))
         return flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60 > 3290
 
-    def getWinduvSpeed():
-        dlat = -2*10**(-6) #grados/seg
-        dlong = -6*10**(-6) #grados/seg
-        return tools.deg2m(dlat, dlong, 39.573174) #ya en m/s
+    def getWinduvSpeed(self, lat, lon, alt, time, flightNumber):
+        # TODO: this method should not recieve flight number
+        #dlat = -2*10**(-6) #grados/seg
+        #dlong = -6*10**(-6) #grados/seg
+        #return tools.deg2m(dlat, dlong, 39.573174) #ya en m/s
+        #vel hor:
+        long1 = self.__excel_data[self.COLUMNS_NAME[1]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60]
+        long2 = self.__excel_data[self.COLUMNS_NAME[1]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60+1]
+        #logger.debug("long1: {}-long2: {}".format(long1, long2))
+        u = tools.haversine(0, long1, 0, long2)
+        #vel ver:
+        lat1 = self.__excel_data[self.COLUMNS_NAME[0]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60]
+        lat2 = self.__excel_data[self.COLUMNS_NAME[0]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60+1]
+        #logger.debug("lat1: {}-lat2: {}".format(lat1, lat2))
+        v = tools.haversine(lat1, 0, lat2, 0)
+        return u, v
 
     def getVerticalSpeed(self, flightNumber):
         # TODO: this method should not recieve flight number
