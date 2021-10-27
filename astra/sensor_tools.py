@@ -16,7 +16,7 @@ class Sensor(object):
 
     def __init__(self, data_path='astra_simulator/astra/sensors_data/V4.xlsx',
                 sheet_name='Todo menos inicio y final',
-                 columns_name=['Latitud', 'Longuitud', 'Altura', 'TempOut', 'Yaw', 'VelX', 'VelY', 'Presion']):
+                 columns_name=['Latitud', 'Longuitud', 'Altura', 'T2', 'Yaw', 'VelX', 'VelY', 'pres']):
         self.DATA_PATH = os.path.abspath(data_path)
         self.SHEET_NAME = sheet_name
         #This variable must always have the values in the following order:
@@ -67,7 +67,7 @@ class Sensor(object):
             result : float (degrees)
         """
         if not self.__loaded_data:
-            self.__excel_data = self.__get_excel_data()
+            self.__get_excel_data()
         #logger.debug("Datos a extraer: ")
         #logger.debug(self.__excel_data[self.COLUMNS_NAME[1]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60])
         # df = pd.DataFrame(self.__excel_data, columns=[self.COLUMNS_NAME[1]])
@@ -87,7 +87,7 @@ class Sensor(object):
             result : float (meters)
         """
         if not self.__loaded_data:
-            self.__excel_data = self.__get_excel_data()
+            self.__get_excel_data()
         #logger.debug("Datos a extraer: ")
         #logger.debug(self.__excel_data[self.COLUMNS_NAME[2]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60])
         # df = pd.DataFrame(self.__excel_data, columns=[self.COLUMNS_NAME[2]])
@@ -125,7 +125,7 @@ class Sensor(object):
 
     #TODO: the following functions may not be needed
 
-    def getTemperature(self):
+    def getTemperature(self, flightNumber):
         """
         Gets temperature in degrees celsius from sensors
 
@@ -138,8 +138,8 @@ class Sensor(object):
             result : float (degrees celsius)
         """
         if not self.__loaded_data:
-            self.__excel_data = self.__get_excel_data()
-        return pd.DataFrame(self.__excel_data, columns=self.COLUMNS_NAME[3])
+            self.__get_excel_data()
+        return self.__excel_data[self.COLUMNS_NAME[3]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60]
 
     def getWindDirection(self):
         """
@@ -154,7 +154,7 @@ class Sensor(object):
             result : float (degrees from north)
         """
         if not self.__loaded_data:
-            self.__excel_data = self.__get_excel_data()
+            self.__get_excel_data()
         return pd.DataFrame(self.__excel_data, columns=self.COLUMNS_NAME[4])
 
     def getPressure(self):
@@ -170,7 +170,7 @@ class Sensor(object):
             result : float (milibar)
         """
         if not self.__loaded_data:
-            self.__excel_data = self.__get_excel_data()
-        return pd.DataFrame(self.__excel_data, columns=self.COLUMNS_NAME[0])
+            self.__get_excel_data()
+        return pd.DataFrame(self.__excel_data, columns=self.COLUMNS_NAME[7])
 
 

@@ -224,6 +224,7 @@ def balloonDrag(diameter, ascentRate, density, viscosity,
             (reynoldsNumber - transition * 1e5) / float(ReBand * 1e5) )
     else:
         balloonCD = lowCD
+    logger.debug("balloon cd: %.4f" %(balloonCD))
 
     return 0.5 * density * (abs(ascentRate) ** 2) * (pi * (diameter ** 2) / 4.) * balloonCD
 

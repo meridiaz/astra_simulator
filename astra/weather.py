@@ -1106,8 +1106,10 @@ class realEnvironment(forecastEnvironment):
         created. This is set to False by default, as the :obj:`flight` object
         should preferably be used to load the forecast (input validation and
         preflight checks should be done before expensive data download) 
-     [realScenario] : bool, optional (default False)
+    [realScenario] : bool, optional (default True)
         If True, we collect some data from sensors
+    [correct_data] : bool, optional (default False)
+        If True, pressure and temperature is corrected with data from sensors
     """
     
     def __init__(self,
@@ -1120,8 +1122,10 @@ class realEnvironment(forecastEnvironment):
                  debugging=False,             
                  load_on_init=False,
                  realScenario=True,
-                 log_to_file=False):
+                 log_to_file=False,
+                 correct_data=False):
         self.sensor = Sensor()
+        self.correct_data = correct_data
                
         super(realEnvironment, self).__init__(
             inflationTemperature=inflationTemperature,

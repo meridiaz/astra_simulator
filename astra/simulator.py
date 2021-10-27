@@ -379,6 +379,15 @@ class flight(object):
         altitude and time.
         If TRUE wind prediction will be made from forecast environmet 
         downloaded from NOAA API.
+    [elevation_model] : bool (default False)
+        If FALSE, negative altitudes calculated using ode equation will be
+        remove.
+        If TRUE, altitudes calculated using ode eq lower than terrain elevation
+        will be remove.
+    [press_error and temp_error]: float (default 0.0)
+        If it is realScenario and environment flag correct_data is set to True,
+        these variables will indicate error between forecasted and actual
+        temperature and pressure taken from sensors
 
     Attributes
     ----------
@@ -425,7 +434,10 @@ class flight(object):
                  debugging=False,
                  log_to_file=False,
                  progress_to_file=False,
-                 forecast_wind=True):
+                 forecast_wind=True,
+                 elevation_model=False,
+                 temp_error=0.,
+                 press_error=0.):
         """
         Initialize all the parameters of the object and setup the debugging if
         required.
@@ -471,6 +483,9 @@ class flight(object):
         # small amount of order dependency here: e.g., self.payloadtrainWeight
         # must be defined before nozzleLift 
         self.forecast_wind = forecast_wind
+        self.elevation_model = elevation_model
+        self.temp_error = temp_error
+        self.press_error = press_error
         self.environment = environment                # weather object
         self.balloonGasType = balloonGasType
         self._numberOfSimRuns = numberOfSimRuns       # Don't use the setter here: circular dependency with self.balloonModel
@@ -803,6 +818,9 @@ class flight(object):
 
         sensor = Sensor()
 
+        # store the instant at which simulation begin
+        self.__sims_start = datetime.now()
+
         # _________________________________________________________________ #
         # RUN THE FLIGHT SIMULATION
         for flightNumber in range(self.numberOfSimRuns):
@@ -859,7 +877,8 @@ class flight(object):
                 self._ReBand.append(drag_helium.transitions[mcIndex, 3])
                 self._balloonReturnFraction.append(
                     0.03 + numpy.random.random() * (1 - 0.03))
-                self._parachuteCD.append(1.9 + 0.2 * numpy.random.random() *
+                #cambiado 1.9 ppor 0.9
+                self._parachuteCD.append(0.9 + 0.2 * numpy.random.random() *
                                          (-1) ** round(numpy.random.random()))
                 #calculate burst diameter with weibull probability density
                 if self._weibull_lambda == 0.0 and self._weibull_k == 0.0:
@@ -1026,9 +1045,8 @@ class flight(object):
         # Monte Carlo simulations.
         # also if it is a real scenario and we do not want to use a forecast
         # we need to obtain wind parametersfrom sensors
-        logger.debug("TRAADZA: {} - {}".format(self.numberOfSimRuns, self.forecast_wind))
+        
         if not self.forecast_wind:
-            logger.debug("He entrado")
             currentFlightWindDirection = sensor.getWinduvSpeed
             currentFlightWindSpeed = sensor.getWinduvSpeed
         elif self.numberOfSimRuns == 1:
@@ -1112,7 +1130,6 @@ class flight(object):
 
             #collect wind speed directly from sensors if forecast_wind is set
             # to True
-            logger.debug("traza 2: {}".format(self.forecast_wind))
             if not self.forecast_wind:
                 windLon, windLat = currentFlightWindDirection(self._currentLatPosition,
                                                 self._currentLonPosition,
@@ -1176,16 +1193,16 @@ class flight(object):
                 logger.debug('the balloon is currently ascending')
                 # Calculate current balloon diameter to check for burst
                 # balloon gas temperature, density, volume and diameter
-                 
+                
                 gasTemp = tools.c2kel(self.environment.getTemperature(
                     self._currentLatPosition, self._currentLonPosition,
-                    altitude, currentTime))
+                    altitude, currentTime)) + self.temp_error
                                     
                
                 gasDensity = (self.excessPressureCoeff *
                     self.environment.getPressure(self._currentLatPosition,
-                        self._currentLonPosition, altitude,currentTime) * 100
-                        * self._gasMolecularMass / (8.31447 * gasTemp))
+                        self._currentLonPosition, altitude, currentTime) * 100
+                        * self._gasMolecularMass / (8.31447 * gasTemp)) + self.press_error
                 """
                 gasDensity = self.environment.getDensity(self._currentLatPosition,
                         self._currentLonPosition, altitude, currentTime)
@@ -1443,33 +1460,35 @@ class flight(object):
             highestAltitude = self._lastFlightBurstAlt
         else:
             highestAltitude = self.floatingAltitude
+        
+        if self.elevation_model:
+            #concatenate coordinates to request elevation to server
+            str_to_req = "|".join(
+                    ["{},{}".format(
+                        latitudeProfile[i], longitudeProfile[i]
+                    ) for i in range(len(latitudeProfile))]
+                )
+            #request each elevation to local server
+            elevations = []
+            for i in range(len(latitudeProfile)):
+                r = requests.get('http://localhost:5000/v1/test-dataset?locations=' + 
+                                str(latitudeProfile[i]) + "," + str(longitudeProfile[i]))
+                elevations.append(r.json()['results'][0]['elevation'])
+            #r = requests.get('http://localhost:5000/v1/test-dataset?locations=' + str_to_req)
+            #elevations = [r.json()['results'][i]['elevation'] for i in range(len(latitudeProfile))]
+            #remove coordinates and elevation which are not correct
+            end_index = len(latitudeProfile)
+            for i in range(1, len(latitudeProfile)):
+                #request elevation for current coordinate
+                if solution_altitude[i] < elevations[i]:
+                    end_index = i
+                    break
+            latitudeProfile = latitudeProfile[0:end_index]
+            longitudeProfile = longitudeProfile[0:end_index]
+            solution_altitude = solution_altitude[0:end_index]
+            timeVector = timeVector[0:end_index]
 
-        #concatenate coordinates to request elevation to server
-        str_to_req = "|".join(
-                ["{},{}".format(
-                    latitudeProfile[i], longitudeProfile[i]
-                ) for i in range(len(latitudeProfile))]
-            )
-        #request each elevation to local server
-        elevations = []
-        for i in range(len(latitudeProfile)):
-            r = requests.get('http://localhost:5000/v1/test-dataset?locations=' + 
-                            str(latitudeProfile[i]) + "," + str(longitudeProfile[i]))
-            elevations.append(r.json()['results'][0]['elevation'])
-        #r = requests.get('http://localhost:5000/v1/test-dataset?locations=' + str_to_req)
-        #elevations = [r.json()['results'][i]['elevation'] for i in range(len(latitudeProfile))]
-        #remove coordinates and elevation which are not correct
-        for i in range(1, len(latitudeProfile)):
-            #request elevation for current coordinate
-            if solution_altitude[i] < elevations[i]:
-                end_index = i
-                break
-        latitudeProfile = latitudeProfile[0:end_index]
-        longitudeProfile = longitudeProfile[0:end_index]
-        solution_altitude = solution_altitude[0:end_index]
-        timeVector = timeVector[0:end_index]
-
-        #build flightProfile in order to make kml file
+        #build flightProfile in order to make csv, kml and kmz files
         resultProfile = flightProfile(launchDateTime, self.nozzleLift,
             flightNumber + 1, timeVector, latitudeProfile,
                   longitudeProfile, solution_altitude, index,
@@ -1477,6 +1496,22 @@ class flight(object):
 
         logger.debug('Simulation completed.')
 
+        # Calculate error between sensors and model used in simulation
+        if self.environment.realScenario and self.environment.correct_data:
+            alt = sensor.getAltitude(flightNumber)
+            lat = sensor.getLat(flightNumber)
+            lon = sensor.getLon(flightNumber)
+            
+            predict_temp = self.environment.getTemperature(lat, lon, alt, 
+                    datetime.now() - self.__sims_start + self.environment.dateAndTime)
+            temp = sensor.getTemperature(flightNumber)
+            self.temp_error = temp - predict_temp
+            #TODO: uncomment if pressure is avaliable 
+            #predict_press = self.environment.getPressure(lat, lon, alt, 
+            #         datetime.now() - self.__sims_start + self.environment.dateAndTime)
+            #press = sensor.getPress()
+            #self.press_error = press - predict_press
+            
         return resultProfile, solution
 
     def write_JSON(self, filename):
