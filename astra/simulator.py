@@ -24,7 +24,7 @@ from .weather import forecastEnvironment, realEnvironment, soundingEnvironment
 from . import global_tools as tools
 from . import drag_helium
 from . import available_balloons_parachutes
-from .sensor_tools import Sensor
+from .sensor_tools import Sensor, SensorSocket
 import json
 import time
 import requests
@@ -47,6 +47,8 @@ KNOTS_TO_MS = 0.514444
 #time to collect data from sensors between each simulation in min
 TIME_BETWEEN_SIMULATIONS = 2
 
+HOST = '127.0.0.1'  # The server's hostname or IP address
+PORT = 8108         # The port used by the server
 
 class flightProfile(object):
     """
@@ -816,7 +818,7 @@ class flight(object):
 
         self.updateProgress(0.0, 0)
 
-        sensor = Sensor()
+        sensor = SensorSocket(HOST, PORT)
 
         # store the instant at which simulation begin
         self.__sims_start = datetime.now()
@@ -826,7 +828,7 @@ class flight(object):
         for flightNumber in range(self.numberOfSimRuns):
             logger.debug('SIMULATING FLIGHT %d' % (flightNumber + 1))
             if self.environment.realScenario:
-                # collect latitude and longitude from sensors each simulation 
+                # collect latitude and longitude from sensors, each simulation 
                 # will consider launch point at this latitude and longitude
                 self.launchSiteLat = sensor.getLat(flightNumber) 
                 self.launchSiteLon = sensor.getLon(flightNumber)
@@ -837,7 +839,8 @@ class flight(object):
             self.results.append(result)
             self.updateProgress(
                 float(flightNumber + 1) / self._totalStepsForProgress, 0)
-            #sleep before next simulation TODO: time.sleep(TIME_BETWEEN_SIMULATIONS * 60)
+            #sleep before next simulation
+            # uncomment for real launching TODO: time.sleep(TIME_BETWEEN_SIMULATIONS * 60)
             
         # _________________________________________________________________ #
         # POSTFLIGHT HOUSEKEEPING AND RESULT PROCESSING

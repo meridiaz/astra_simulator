@@ -23,6 +23,6 @@ setup(
     scripts=['bin/astra-sim'],
     # package_data={'': ['*.dat']},
     install_requires=["numpy", "scipy", "grequests", "six", "deap"],
-    author='Niccolo Zapponi, Paul Chambers',
+    author='Originally: Niccolo Zapponi, Paul Chambers. Modified by: Meritxell Díaz',
     author_email='nz1g10@soton.ac.uk, P.R.Chambers@soton.ac.uk',
 )

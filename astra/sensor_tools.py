@@ -7,6 +7,8 @@ from . import simulator as sim
 from . import global_tools as tools
 import os
 import logging
+import socket
+import json
 
 # SETUP ERROR LOGGING AND DEBUGGING
 logger = logging.getLogger(__name__)
@@ -173,4 +175,71 @@ class Sensor(object):
             self.__get_excel_data()
         return pd.DataFrame(self.__excel_data, columns=self.COLUMNS_NAME[7])
 
+class SensorSocket(object):
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+
+        self.dic = {
+                    "temp": 12,
+                    "press": 13,
+                    "lat": 5,
+                    "lon": 6,
+                    "alt": 7,
+                    "vel_vert": -2,
+                    "burst": 0,
+        }
+    
+    def get_param(self, id, flightNumber):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((self.host, self.port))
+            #print('conectado')
+            #print(s)
+            s.sendall(str(flightNumber).encode('utf-8'))
+            #print('enviado')
+            data = s.recv(1024)
+            data = repr(data).strip("b'")
+        return data.split(',')[id]
+
+    def getAltitude(self, flightNumber):
+        return float(self.get_param(self.dic['alt'], flightNumber*sim.TIME_BETWEEN_SIMULATIONS * 60))
+
+    def getLon(self, flightNumber, a=0):
+        return float(self.get_param(self.dic['lon'], 
+                        flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60 + a))
+
+    def getLat(self, flightNumber, a=0):
+        b = self.get_param(self.dic['lat'], 
+                        flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60 + a)
+        #print("traza en sensor tools lat-------"+b)
+        return float(b)
+
+    def has_burst(self, flightNumber):
+        return json.loads(self.get_param(self.dic['burst'], flightNumber*sim.TIME_BETWEEN_SIMULATIONS * 60).lower())
+
+    def getTemperature(self, flightNumber):
+        return  float(self.get_param(self.dic['temp'], flightNumber*sim.TIME_BETWEEN_SIMULATIONS * 60))
+    
+    def getPressure(self, flightNumber):
+        return  float(self.get_param(self.dic['press'], flightNumber*sim.TIME_BETWEEN_SIMULATIONS * 60))
+
+    def getVerticalSpeed(self, flightNumber):
+        return  float(self.get_param(self.dic['vel_vert'], flightNumber*sim.TIME_BETWEEN_SIMULATIONS * 60))
+
+    def getWinduvSpeed(self, lat, lon, alt, time, flightNumber):
+        # TODO: this method should not recieve flight number
+        #dlat = -2*10**(-6) #grados/seg
+        #dlong = -6*10**(-6) #grados/seg
+        #return tools.deg2m(dlat, dlong, 39.573174) #ya en m/s
+        #vel hor:
+        long1 = self.getLon(flightNumber)
+        long2 = self.getLon(flightNumber, a=1)
+        #logger.debug("long1: {}-long2: {}".format(long1, long2))
+        u = tools.haversine(0, long1, 0, long2)
+        #vel ver:
+        lat1 = self.getLat(flightNumber)
+        lat2 = self.getLat(flightNumber, a=1)
+        #logger.debug("lat1: {}-lat2: {}".format(lat1, lat2))
+        v = tools.haversine(lat1, 0, lat2, 0)
+        return u, v
 
