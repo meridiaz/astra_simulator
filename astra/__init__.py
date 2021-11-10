@@ -10,7 +10,7 @@ from . import simulator
 from . import weather
 from . import target_landing
 
-from .simulator import flight
+from .simulator import Flight
 
 
 import logging

@@ -6,8 +6,10 @@ This module contains classes for modelling the weather and atmosphere.
 The environment classes providing the simulator module with all the atmospheric
 data throughout a simulation. There are two environment
 subclasses defined here:
-    forecastEnvironment : GFS-based atmospheric model
-    soundingEnvironment : atmospheric model generated from a sounding file
+    ForecastEnvironment : GFS-based atmospheric model
+    SoundingEnvironment : atmospheric model generated from a sounding file
+    RealEnvironment     : atmospheric model based on real data taken from sensors
+                            for actual launches
 
 Refer to the individual classes and subclasses for details on how to use them.
 
@@ -39,7 +41,7 @@ except AttributeError:
         return func
 
 
-class environment(object):
+class Environment(object):
     """
     Defines a common interface for the Simulator module.
 
@@ -80,8 +82,8 @@ class environment(object):
         The offset in hours between the current time zone and UTC. NOTE: If
         zero, UTC offset is AUTOMATICALLY retrieved using the launch site GPS
         location
-    realScenario: bool (default = False)
-        indicates if the enviroment uses forecast data or directly 
+    realScenario: bool (default False)
+        indicates if the enviroment uses forecast data or it collects it directly 
         from de sensors
 
     Notes
@@ -187,11 +189,11 @@ class environment(object):
                 type(self).__name__))
 
 
-class soundingEnvironment(environment):
+class SoundingEnvironment(Environment):
     """
     Class for generating an atmospheric model from sounding data.
 
-    Instantiate a new soundingEnvironment object if you are providing a
+    Instantiate a new SoundingEnvironment object if you are providing a
     sounding file to generate an atmospheric model. Accepted formats for
     sounding files are .ftr and .sounding .
 
@@ -220,15 +222,14 @@ class soundingEnvironment(environment):
         the upper altitude limit below which the atmosphere is modelled. [m]
     [debug] : bool, optional (default False)
         If TRUE, all the information available will be logged
-    [log_to_file] : bool, optional (default False)
-         If true, all error and debug logs will be stored in an error.log file
+    
 
     :Example:
 
         >>> from datetime import datetime
         >>> import weather
 
-        >>> my_sounding_atmosphere = weather.soundingEnvironment()
+        >>> my_sounding_atmosphere = weather.SoundingEnvironment()
         >>> my_sounding_atmosphere.launchSiteLat = 50.2245
         >>> my_sounding_atmosphere.launchSiteLon = -5.3069
         my_sounding_atmosphere.launchSiteElev = 60
@@ -267,7 +268,7 @@ class soundingEnvironment(environment):
         self._interpolationPrecision = 200
 
         # Run the environment class initialization first
-        super(soundingEnvironment, self).__init__(
+        super(SoundingEnvironment, self).__init__(
             inflationTemperature=inflationTemperature,
             launchSiteLat=launchSiteLat,
             launchSiteLon=launchSiteLon,
@@ -708,7 +709,7 @@ class soundingEnvironment(environment):
         return None         
         
 
-class forecastEnvironment(environment):
+class ForecastEnvironment(Environment):
     """
     Class responsible for downloading weather forecast data from the Global
     Forecast System (GFS) and generating a forecast-based atmospheric model.
@@ -744,8 +745,6 @@ class forecastEnvironment(environment):
         with asynchronous requesting (use_async)
     [debug] : bool, optional (default False)
         If TRUE, all the information available will be logged
-    [log_to_file]: bool, optional (default False)
-         If true, all error and debug logs will be stored in an error.log file
     [progressHandler] : function, or None (default None)
         Progress for each downloaded parameter (in %) will be passed to this
         function, if provided.
@@ -771,7 +770,7 @@ class forecastEnvironment(environment):
         >>> from datetime import datetime, timedelta
         >>> import weather
 
-        >>> my_forecast_atmosphere = weather.forecastEnvironment()
+        >>> my_forecast_atmosphere = weather.ForecastEnvironment()
         >>> my_forecast_atmosphere.launchSiteLat = 50.2245
         >>> my_forecast_atmosphere.launchSiteLon = -5.3069
         >>> my_forecast_atmosphere.launchSiteElev = 60
@@ -795,8 +794,7 @@ class forecastEnvironment(environment):
                  debugging=False,
                  progressHandler=None,
                  load_on_init=False,
-                 realScenario=False, 
-                 log_to_file=False):
+                 realScenario=False):
         """
         Initialize the forecastEnvironment object
         """
@@ -805,13 +803,12 @@ class forecastEnvironment(environment):
         self.forecastDuration = forecastDuration
         self.use_async = use_async
         self.requestSimultaneous = requestSimultaneous
-        self.realScenario = realScenario
 
         self._GFSmodule = None
 
         # This should be the last thing that is called on init, since the base
-        # (environment) class init calls self.load (if load_on_init is True)
-        super(forecastEnvironment, self).__init__(
+        # (Environment) class init calls self.load (if load_on_init is True)
+        super(ForecastEnvironment, self).__init__(
             inflationTemperature=inflationTemperature,
             launchSiteLat=launchSiteLat,
             launchSiteLon=launchSiteLon,
@@ -1059,9 +1056,9 @@ class forecastEnvironment(environment):
             self.getMCWindDirection.append(perturbedWindDirection)
             self.getMCWindSpeed.append(perturbedWindSpeed)
 
-class realEnvironment(forecastEnvironment):   
+class RealEnvironment(ForecastEnvironment):   
     """
-    Class responsible for creating a real environment in which data is 
+    Class responsible of creating a real environment in which data is 
     taken from sensors.
 
     Parameters
@@ -1096,8 +1093,6 @@ class realEnvironment(forecastEnvironment):
         with asynchronous requesting (use_async)
     [debug] : bool, optional (default False)
         If TRUE, all the information available will be logged
-    [log_to_file]: bool, optional (default False)
-         If true, all error and debug logs will be stored in an error.log file
     [progressHandler] : function, or None (default None)
         Progress for each downloaded parameter (in %) will be passed to this
         function, if provided.
@@ -1121,13 +1116,12 @@ class realEnvironment(forecastEnvironment):
                  inflationTemperature=0.0,
                  debugging=False,             
                  load_on_init=False,
-                 realScenario=True,
-                 log_to_file=False,
-                 correct_data=False):
-        self.sensor = Sensor()
+                 correct_data=False,
+                 forceNonHD = False):
+        #self.sensor = Sensor()
         self.correct_data = correct_data
                
-        super(realEnvironment, self).__init__(
+        super(RealEnvironment, self).__init__(
             inflationTemperature=inflationTemperature,
             launchSiteLat=launchSiteLat,
             launchSiteLon=launchSiteLon,
@@ -1136,10 +1130,8 @@ class realEnvironment(forecastEnvironment):
             UTC_offset=UTC_offset,
             debugging=debugging,
             load_on_init=load_on_init,
-            realScenario=realScenario, 
-            log_to_file=log_to_file)
-        # es necesario llamar a load antes de comenzar 
-        # las simulaciones
+            realScenario=True, 
+            forceNonHD = forceNonHD)
         
     # it is not required to override the methos except for those
     # related to wind parameters: speed and direction
@@ -1178,14 +1170,15 @@ class realEnvironment(forecastEnvironment):
         TR = ((0.555 * standardTempRankine) + C) / ((0.555 * tempRankine) + C)
         vcP = Mu0 * TTO * TR
         return vcP / 1000.
-    """
+    
 
     def getWindDirectionS(self, lat, lon, alt, time, flightNumber):
-        logger.debug("cogiendo viento en real class environment")
+        logger.debug("cogiendo viento en real class Environment")
         return self.sensor.getWinduvSpeed(flightNumber)
 
     def getWindSpeedS(self, lat, lon, alt, time, flightNumber):
-        logger.debug("cogiendo viento en real class environment")
+        logger.debug("cogiendo viento en real class Environment")
         return self.sensor.getWinduvSpeed(flightNumber)
+    """
     
     

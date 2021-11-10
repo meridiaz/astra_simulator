@@ -11,8 +11,8 @@ See examples/notebooks/example_targetlanding.ipynb for usage.
 
 University of Southampton
 """
-from .simulator import flight, flightProfile
-from .weather import forecastEnvironment
+from .simulator import Flight, FlightProfile
+from .weather import ForecastEnvironment
 from .available_balloons_parachutes import balloons
 
 from datetime import datetime, timedelta
@@ -89,7 +89,7 @@ creator.create("flightFitness", base.Fitness, weights=(-1, -1, -1))
 logger = logging.getLogger(__name__)
 
 
-class targetProfile(flightProfile):
+class targetProfile(FlightProfile):
     """Extends the astra.simulator.flightProfile to assign both a fitness
     measure, and a vector of inputs used in the objective function.
 
@@ -133,7 +133,7 @@ class targetProfile(flightProfile):
         self.X = X
 
 
-class targetFlight(flight):
+class targetFlight(Flight):
     """Class for estimating the required launch parameters (date/time, nozzle
     lift, floating vs standard, cutdown altitude, etc.) for minimal distance
     from a target landing site.

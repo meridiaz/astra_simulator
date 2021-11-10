@@ -4,7 +4,7 @@
 This module contains classes for primary flight simulation and the processing
 of results.
 
-With all the flight parameters, the flight class defines the framework of
+With all the flight parameters, the Flight class defines the framework of
 operations necessary to accomplish the balloon flight simulation. See examples
 for usage.
 
@@ -20,7 +20,7 @@ from six.moves import range, builtins
 import numpy
 from scipy.integrate import odeint
 from . import flight_tools as ft
-from .weather import forecastEnvironment, realEnvironment, soundingEnvironment
+from .weather import ForecastEnvironment, RealEnvironment, SoundingEnvironment
 from . import global_tools as tools
 from . import drag_helium
 from . import available_balloons_parachutes
@@ -45,12 +45,12 @@ logger = logging.getLogger(__name__)
 KNOTS_TO_MS = 0.514444
 
 #time to collect data from sensors between each simulation in min
-TIME_BETWEEN_SIMULATIONS = 2
+TIME_BETWEEN_SIMULATIONS = 4
 
 HOST = '127.0.0.1'  # The server's hostname or IP address
 PORT = 8108         # The port used by the server
 
-class flightProfile(object):
+class FlightProfile(object):
     """
     Parameters
     ----------
@@ -287,7 +287,7 @@ class flightProfile(object):
             *args, **kwargs)
 
 
-class flight(object):
+class Flight(object):
     """Primary Balloon flight simulation class.
 
     Provides methods for solving the ascent rate equation given in [1]_, 
@@ -381,6 +381,8 @@ class flight(object):
         altitude and time.
         If TRUE wind prediction will be made from forecast environmet 
         downloaded from NOAA API.
+        If it is a real environmet, forecast_wind is set to True and will ignore
+        value entered by the user
     [elevation_model] : bool (default False)
         If FALSE, negative altitudes calculated using ode equation will be
         remove.
@@ -489,6 +491,8 @@ class flight(object):
         self.temp_error = temp_error
         self.press_error = press_error
         self.environment = environment                # weather object
+        if not self.environment.realScenario:
+            self.forecast_wind = True
         self.balloonGasType = balloonGasType
         self._numberOfSimRuns = numberOfSimRuns       # Don't use the setter here: circular dependency with self.balloonModel
         self.balloonModel = balloonModel              # See available_balloons
@@ -508,7 +512,7 @@ class flight(object):
         
 
         # Set the 
-        self.profileClass = flightProfile
+        self.profileClass = FlightProfile
 
         if self.cutdownTimeout != numpy.inf:
             self.cutdown = True
@@ -585,7 +589,7 @@ class flight(object):
 
             # Check if GFS is being used
             #and not new_environment.realScenario v2:  and self.forecast_wind
-            if isinstance(new_environment, forecastEnvironment):
+            if isinstance(new_environment, ForecastEnvironment):
                 self._usingGFS = True
             else:
                 self._usingGFS = False
@@ -619,7 +623,7 @@ class flight(object):
         
         Setting this value also updates several internal balloon data criteria,
         including balloon mass, weibull distribution of burst diameter, and
-        the monte carlo array used by :func:`~astra.simulator.flight.run`
+        the monte carlo array used by :func:`~astra.simulator.Flight.run`
         """
         return self._balloonModel
 
@@ -699,7 +703,7 @@ class flight(object):
     def numberOfSimRuns(self):
         """number of sim runs property.
 
-        Will update the monte carlo parameters, using :func:`~astra.simulator.flight.initMonteCarloParams`.
+        Will update the monte carlo parameters, using :func:`~astra.simulator.Flight.initMonteCarloParams`.
         This means that a balloon type must be selected before setting this value.
         """
         return self._numberOfSimRuns
@@ -1012,12 +1016,12 @@ class flight(object):
 
         Returns
         -------
-        result : :obj:`astra.simulator.flightProfile`
+        result : :obj:`astra.simulator.FlightProfile`
             object containing the flight profile, input data etc
 
         See Also
         --------
-        astra.simulator.flightProfile
+        astra.simulator.FlightProfile
         """
         # Check whether the preflight sequence was performed. If not, stop the
         # simulation.
@@ -1492,7 +1496,7 @@ class flight(object):
             timeVector = timeVector[0:end_index]
 
         #build flightProfile in order to make csv, kml and kmz files
-        resultProfile = flightProfile(launchDateTime, self.nozzleLift,
+        resultProfile = FlightProfile(launchDateTime, self.nozzleLift,
             flightNumber + 1, timeVector, latitudeProfile,
                   longitudeProfile, solution_altitude, index,
                   highestAltitude, self._lastFlightBurst, self.balloonModel)
@@ -1512,7 +1516,7 @@ class flight(object):
             #TODO: uncomment if pressure is avaliable 
             #predict_press = self.environment.getPressure(lat, lon, alt, 
             #         datetime.now() - self.__sims_start + self.environment.dateAndTime)
-            #press = sensor.getPress()
+            #press = sensor.getPressure()
             #self.press_error = press - predict_press
             
         return resultProfile, solution
