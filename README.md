@@ -1,4 +1,4 @@
-This package gives accurate information about the landing area of a HAB (High Altitude Balloon)
+This package gives accurate information about the landing area of a HAB (High Altitude Balloon). File main.py shows how to use this package.
 
 Use cases:
     **BOTH CASES NEED INTERNET CONNECTION IN ORDER TO DOWNLOAD WIND DATA, PRESSURE AND TEMPERATURE FROM GFS (Global Forecast System)**
