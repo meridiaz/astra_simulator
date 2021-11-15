@@ -187,44 +187,43 @@ class SensorSocket(object):
                     "lon": 6,
                     "alt": 7,
                     "vel_vert": -2,
-                    "burst": 0,
+                    "burst": 0, 
         }
     
-    def get_param(self, id, flightNumber):
+    def get_param(self, msg):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((self.host, self.port))
             #print('conectado')
             #print(s)
-            s.sendall(str(flightNumber).encode('utf-8'))
+            s.sendall(str(msg).encode('utf-8'))
             #print('enviado')
             data = s.recv(1024)
             data = repr(data).strip("b'")
-        return data.split(',')[id]
+            #print(data)
+        return data.split(',')
 
     def getAltitude(self, flightNumber):
-        return float(self.get_param(self.dic['alt'], flightNumber*sim.TIME_BETWEEN_SIMULATIONS * 60))
+        return float(self.get_param(flightNumber*sim.TIME_BETWEEN_SIMULATIONS * 60)[self.dic['alt']])
 
     def getLon(self, flightNumber, a=0):
-        return float(self.get_param(self.dic['lon'], 
-                        flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60 + a))
+        return float(self.get_param(flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60 + a)[self.dic['lon']])
 
     def getLat(self, flightNumber, a=0):
-        b = self.get_param(self.dic['lat'], 
-                        flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60 + a)
+        b = self.get_param(flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60 + a)[self.dic['lat']]
         #print("traza en sensor tools lat-------"+b)
         return float(b)
 
     def has_burst(self, flightNumber):
-        return json.loads(self.get_param(self.dic['burst'], flightNumber*sim.TIME_BETWEEN_SIMULATIONS * 60).lower())
+        return json.loads(self.get_param(flightNumber*sim.TIME_BETWEEN_SIMULATIONS * 60)[self.dic['burst']].lower())
 
     def getTemperature(self, flightNumber):
-        return  float(self.get_param(self.dic['temp'], flightNumber*sim.TIME_BETWEEN_SIMULATIONS * 60))
+        return  float(self.get_param(flightNumber*sim.TIME_BETWEEN_SIMULATIONS * 60)[self.dic['temp']])
     
     def getPressure(self, flightNumber):
-        return  float(self.get_param(self.dic['press'], flightNumber*sim.TIME_BETWEEN_SIMULATIONS * 60))
+        return  float(self.get_param(flightNumber*sim.TIME_BETWEEN_SIMULATIONS * 60)[self.dic['press']])
 
     def getVerticalSpeed(self, flightNumber):
-        return  float(self.get_param(self.dic['vel_vert'], flightNumber*sim.TIME_BETWEEN_SIMULATIONS * 60))
+        return  float(self.get_param(flightNumber*sim.TIME_BETWEEN_SIMULATIONS * 60)[self.dic['vel_vert']])
 
     def getWinduvSpeed(self, lat, lon, alt, time, flightNumber):
         # TODO: this method should not recieve flight number
@@ -243,3 +242,6 @@ class SensorSocket(object):
         v = tools.haversine(lat1, 0, lat2, 0)
         return u, v
 
+    def send_prediction(self, msg):
+        logger.debug("el server ha recibido: " + self.get_param(msg)[0] +
+                        ", "+ self.get_param(msg)[1])

@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 KNOTS_TO_MS = 0.514444
 
 #time to collect data from sensors between each simulation in min
-TIME_BETWEEN_SIMULATIONS = 4
+TIME_BETWEEN_SIMULATIONS = 2
 
 HOST = '127.0.0.1'  # The server's hostname or IP address
 PORT = 8108         # The port used by the server
@@ -843,6 +843,11 @@ class Flight(object):
             self.results.append(result)
             self.updateProgress(
                 float(flightNumber + 1) / self._totalStepsForProgress, 0)
+            # if it is a real scenario send prediction:
+            if self.environment.realScenario:
+                msg = str(result.latitudeProfile[-1])+","+str(result.longitudeProfile[-1])
+                sensor.send_prediction(msg)
+            
             #sleep before next simulation
             # uncomment for real launching TODO: time.sleep(TIME_BETWEEN_SIMULATIONS * 60)
             
