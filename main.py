@@ -9,8 +9,8 @@ from datetime import datetime, timedelta
 import sys
 import os
 #sys.path.append(os.path.abspath('astra_simulator/astra'))
-from astra_simulator.astra.simulator import *
-import astra_simulator.astra.weather as weather
+from astra.simulator import *
+import astra.weather as weather
 import logging
 #from astra_simulator.astra import * 
 
@@ -57,10 +57,10 @@ simFlight = Flight(balloonGasType, balloonModel, nozzleLift, payloadTrainWeight,
                    parachuteModel=parachuteModel, numberOfSimRuns=numberOfSimRuns, 
                    trainEquivSphereDiam=trainEquivSphereDiam, cutdown=cutdown, cutdownAltitude=cutdownAltitude,
                    excessPressureCoeff=excessPressureCoeff, debugging=True, log_to_file=True, 
-                   forecast_wind=False, elevation_model=True, maxFlightTime=maxFlightTime)
+                   forecast_wind=False, elevation_model=False, maxFlightTime=maxFlightTime)
 
 #simFlight.maxFlightTime = 5*60*60
-simFlight.outputFile = os.path.join('./simulaciones', 'prueba_simulation')
+simFlight.outputFile = os.path.join('../simulaciones', 'prueba_simulation')
 
 
 # Run the simulation

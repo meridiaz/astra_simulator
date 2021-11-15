@@ -48,7 +48,7 @@ KNOTS_TO_MS = 0.514444
 TIME_BETWEEN_SIMULATIONS = 2
 
 HOST = '127.0.0.1'  # The server's hostname or IP address
-PORT = 8108         # The port used by the server
+PORT = 8110         # The port used by the server
 
 class FlightProfile(object):
     """
