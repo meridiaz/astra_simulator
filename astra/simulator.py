@@ -26,7 +26,7 @@ from . import drag_helium
 from . import available_balloons_parachutes
 from .sensor_tools import Sensor, SensorSocket
 import json
-import time
+import time as t
 import requests
 
 
@@ -47,7 +47,7 @@ KNOTS_TO_MS = 0.514444
 #time to collect data from sensors between each simulation in min
 TIME_BETWEEN_SIMULATIONS = 2
 
-HOST = '127.0.0.1'  # The server's hostname or IP address
+HOST = '192.168.0.20'  # The server's hostname or IP address
 PORT = 8110         # The port used by the server
 
 class FlightProfile(object):
@@ -834,8 +834,8 @@ class Flight(object):
             if self.environment.realScenario:
                 # collect latitude and longitude from sensors, each simulation 
                 # will consider launch point at this latitude and longitude
-                self.launchSiteLat = sensor.getLat(flightNumber) 
-                self.launchSiteLon = sensor.getLon(flightNumber)
+                self.launchSiteLat = sensor.getLat() 
+                self.launchSiteLon = sensor.getLon()
                 currentDateTime = datetime.now()
             else:
                 currentDateTime = self.environment.dateAndTime
@@ -845,11 +845,13 @@ class Flight(object):
                 float(flightNumber + 1) / self._totalStepsForProgress, 0)
             # if it is a real scenario send prediction:
             if self.environment.realScenario:
-                msg = str(result.latitudeProfile[-1])+","+str(result.longitudeProfile[-1])
-                sensor.send_prediction(msg)
+                sensor.send_prediction(result.latitudeProfile[-1], result.longitudeProfile[-1])
+            
             
             #sleep before next simulation
-            # uncomment for real launching TODO: time.sleep(TIME_BETWEEN_SIMULATIONS * 60)
+            # uncomment for real launching TODO: 
+            t.sleep(TIME_BETWEEN_SIMULATIONS * 60)
+            #logger.debug("here is were sleep should be located")
             
         # _________________________________________________________________ #
         # POSTFLIGHT HOUSEKEEPING AND RESULT PROCESSING
@@ -1030,7 +1032,9 @@ class Flight(object):
         """
         # Check whether the preflight sequence was performed. If not, stop the
         # simulation.
+        logger.debug("starting simulation")
         if runPreflight:
+            logger.debug("dentro del if")
             try:
                 self._preflight(self.environment.dateAndTime)
             except:
@@ -1038,8 +1042,11 @@ class Flight(object):
                     "Error during preflight validations and calculations:")
                 raise
         else:
+            logger.debug("dentro del else")
             assert(self._preflightCompleted),\
                 "'preflight' must be run at least once before attempting a flight"
+
+        
         # Flight-specific variables initialization
         # Prepare the flight tools to deliver results specific to this flight.
         highCD = self._highCD[flightNumber]
@@ -1087,8 +1094,8 @@ class Flight(object):
         logger.debug('Beginning simulation of flight %d' % (flightNumber + 1))
 
         if self.environment.realScenario:
-            self._lastFlightBurst = sensor.has_burst(flightNumber)
-            self._lastFlightBurstAlt = sensor.getAltitude(flightNumber)
+            self._lastFlightBurst = sensor.has_burst()
+            self._lastFlightBurstAlt = sensor.getAltitude()
         else:
             self._lastFlightBurst = False 
             self._lastFlightBurstAlt = 0.0
@@ -1146,7 +1153,7 @@ class Flight(object):
                 windLon, windLat = currentFlightWindDirection(self._currentLatPosition,
                                                 self._currentLonPosition,
                                                 altitude,
-                                                currentTime, flightNumber)
+                                                currentTime, flightNumber=flightNumber)
                 logger.debug("windlon: %.4f, windlat: %.4f:" %(windLon, windLat))
             else:
                 # Convert wind direction and speed to u- and v-coordinates
@@ -1362,8 +1369,8 @@ class Flight(object):
         # will be trimmed later on.
         if self.environment.realScenario:
             #take elev and ascent rate from sensors
-            initialConditions = numpy.array([sensor.getAltitude(flightNumber),
-                                             sensor.getVerticalSpeed(flightNumber)])
+            initialConditions = numpy.array([sensor.getAltitude(),
+                                             sensor.getVerticalSpeed()])
         else:
             initialConditions = numpy.array([self.launchSiteElev, 0.0])
         timeVector = numpy.arange(0, self.maxFlightTime + self.samplingTime,
@@ -1407,7 +1414,7 @@ class Flight(object):
             currentTime = launchDateTime + timedelta(seconds=float(eachTime))
             if not self.forecast_wind:
                 windLon, windLat = currentFlightWindDirection(latitudeProfile[-1],
-                    longitudeProfile[-1], eachAlt, currentTime, flightNumber)
+                    longitudeProfile[-1], eachAlt, currentTime, flightNumber=flightNumber)
             else:
                 # Gather wind speed and convert to m/s
                 windSpeed = currentFlightWindSpeed(latitudeProfile[-1],
@@ -1474,20 +1481,13 @@ class Flight(object):
             highestAltitude = self.floatingAltitude
         
         if self.elevation_model:
-            #concatenate coordinates to request elevation to server
-            str_to_req = "|".join(
-                    ["{},{}".format(
-                        latitudeProfile[i], longitudeProfile[i]
-                    ) for i in range(len(latitudeProfile))]
-                )
             #request each elevation to local server
             elevations = []
             for i in range(len(latitudeProfile)):
                 r = requests.get('http://localhost:5000/v1/test-dataset?locations=' + 
                                 str(latitudeProfile[i]) + "," + str(longitudeProfile[i]))
                 elevations.append(r.json()['results'][0]['elevation'])
-            #r = requests.get('http://localhost:5000/v1/test-dataset?locations=' + str_to_req)
-            #elevations = [r.json()['results'][i]['elevation'] for i in range(len(latitudeProfile))]
+           
             #remove coordinates and elevation which are not correct
             end_index = len(latitudeProfile)
             for i in range(1, len(latitudeProfile)):
@@ -1510,13 +1510,13 @@ class Flight(object):
 
         # Calculate error between sensors and model used in simulation
         if self.environment.realScenario and self.environment.correct_data:
-            alt = sensor.getAltitude(flightNumber)
-            lat = sensor.getLat(flightNumber)
-            lon = sensor.getLon(flightNumber)
+            alt = sensor.getAltitude()
+            lat = sensor.getLat()
+            lon = sensor.getLon()
             
             predict_temp = self.environment.getTemperature(lat, lon, alt, 
                     datetime.now() - self.__sims_start + self.environment.dateAndTime)
-            temp = sensor.getTemperature(flightNumber)
+            temp = sensor.getTemperature()
             self.temp_error = temp - predict_temp
             #TODO: uncomment if pressure is avaliable 
             #predict_press = self.environment.getPressure(lat, lon, alt, 

@@ -26,8 +26,8 @@ logging.getLogger('urllib3').setLevel(logging.CRITICAL)
 #        time: tomorrow, this time
 launchSiteLat = 39.573517                 # deg
 launchSiteLon = -3.5172               # deg
-launchSiteElev = 722                     # m
-dateAndTime = datetime.now() #+ timedelta(days=1)
+launchSiteElev = 704 #722                     # m
+dateAndTime = datetime.now() + timedelta(days=1)
 #dateAndTime = datetime(2021, 11, 11, 10, 15, 0)
 
 simEnvironment = weather.RealEnvironment(launchSiteLat, launchSiteLon, launchSiteElev, dateAndTime, 
@@ -46,21 +46,21 @@ balloonModel = 'PACPR1600'
 nozzleLift = 4.395#3.008#12.456#3.225#4.395                                # kg obtener de la calculadora del habhub
 payloadTrainWeight = 2.8896                    # kg
 parachuteModel = 'PX02'
-numberOfSimRuns = 5
+numberOfSimRuns = 20
 trainEquivSphereDiam = 0.1                    # m
 cutdown = True
 cutdownAltitude = 35000
 excessPressureCoeff = 1
-maxFlightTime = 18000 #2700seg = 7.5h
+maxFlightTime = 10800 #2700seg = 7.5h #seconds
 
 simFlight = Flight(balloonGasType, balloonModel, nozzleLift, payloadTrainWeight, environment,
                    parachuteModel=parachuteModel, numberOfSimRuns=numberOfSimRuns, 
                    trainEquivSphereDiam=trainEquivSphereDiam, cutdown=cutdown, cutdownAltitude=cutdownAltitude,
                    excessPressureCoeff=excessPressureCoeff, debugging=True, log_to_file=True, 
-                   forecast_wind=False, elevation_model=False, maxFlightTime=maxFlightTime)
+                   forecast_wind=False, elevation_model=True, maxFlightTime=maxFlightTime)
 
 #simFlight.maxFlightTime = 5*60*60
-simFlight.outputFile = os.path.join('../simulaciones', 'prueba_simulation')
+simFlight.outputFile = os.path.join('../simulaciones', 'prueba_comp5')
 
 
 # Run the simulation
