@@ -47,7 +47,7 @@ KNOTS_TO_MS = 0.514444
 #time to collect data from sensors between each simulation in min
 TIME_BETWEEN_SIMULATIONS = 2
 
-HOST = '192.168.0.20'  # The server's hostname or IP address
+HOST = '192.168.X.XXX'  # The server's hostname or IP address
 PORT = 8110         # The port used by the server
 
 class FlightProfile(object):
@@ -1375,6 +1375,7 @@ class Flight(object):
             initialConditions = numpy.array([self.launchSiteElev, 0.0])
         timeVector = numpy.arange(0, self.maxFlightTime + self.samplingTime,
             self.samplingTime)
+        logger.debug("time vectorrr"+str(timeVector[-1]))
 
         logger.debug('Beginning integration.')
 

@@ -13,6 +13,7 @@ import logging
 import socket
 import json
 import time as t
+import numpy as np
 
 # SETUP ERROR LOGGING AND DEBUGGING
 logger = logging.getLogger(__name__)
@@ -31,6 +32,8 @@ class Sensor(object):
         self.COLUMNS_NAME = columns_name
         self.__loaded_data = False
         self.__excel_data = None
+        self.__speed_vert = None
+        self.__loaded_data_speed = False
         logger.debug("Path to excel data: "+ self.DATA_PATH)
         logger.debug("Sheet name: " + self.SHEET_NAME)
         logger.debug("Columns name in excel data: " + str(self.COLUMNS_NAME))
@@ -57,7 +60,7 @@ class Sensor(object):
         #logger.debug("Datos a extraer: ")
         #logger.debug(self.__excel_data[self.COLUMNS_NAME[0]][flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60])
         #df = pd.DataFrame(self.__excel_data, columns=[self.COLUMNS_NAME[0]])
-        #logger.debug("Numero de registro a consultar:" + str(flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60))
+        logger.debug("Numero de registro a consultar:" + str(flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60))
         return self.__excel_data[self.COLUMNS_NAME[0]][flightNumber*sim.TIME_BETWEEN_SIMULATIONS*60]
 
     def getLon(self, flightNumber):
@@ -103,30 +106,38 @@ class Sensor(object):
     def has_burst(self, flightNumber):
         #return eval(input('Indique si el globo ya ha explotado'))
         return flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60 > 3290
+    
 
     def getWinduvSpeed(self, lat, lon, alt, time, flightNumber):
         if not self.__loaded_data:
             self.__get_excel_data()
-        #dlat = -2*10**(-6) #grados/seg
-        #dlong = -6*10**(-6) #grados/seg
-        #return tools.deg2m(dlat, dlong, 39.573174) #ya en m/s
-        #vel hor:
+        
+
         long1 = self.__excel_data[self.COLUMNS_NAME[1]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60]
         long2 = self.__excel_data[self.COLUMNS_NAME[1]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60+1]
         #logger.debug("long1: {}-long2: {}".format(long1, long2))
         u = tools.haversine(0, long1, 0, long2)
-        #vel ver:
+        
         lat1 = self.__excel_data[self.COLUMNS_NAME[0]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60]
         lat2 = self.__excel_data[self.COLUMNS_NAME[0]][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60+1]
         #logger.debug("lat1: {}-lat2: {}".format(lat1, lat2))
+
+        # set index of vectors in u and v
+        sign_lat = np.sign(lat2 - lat1)
+        sign_lon = np.sign(long2 - long1)
+
         v = tools.haversine(lat1, 0, lat2, 0)
-        return u, v
+        return u*sign_lon, v*sign_lat
+
 
     def getVerticalSpeed(self, flightNumber):
-        data = pd.read_excel(self.DATA_PATH, sheet_name="Vel.Vertical V4")
+        if not self.__loaded_data_speed:
+            self.__speed_vert = pd.read_excel(self.DATA_PATH, sheet_name="Vel.Vertical V4")
+            self.__loaded_data_speed = True
+        
         logger.debug("Reading vertical speed sheet, elev:" +
-                     str(data['Vel. (m/s)'][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60]))
-        return data['Vel. (m/s)'][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60]
+                     str(self.__speed_vert['Vel. (m/s)'][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60]))
+        return self.__speed_vert['Vel. (m/s)'][flightNumber * sim.TIME_BETWEEN_SIMULATIONS * 60]
 
     #TODO: the following functions may not be needed
 
@@ -177,6 +188,9 @@ class Sensor(object):
         if not self.__loaded_data:
             self.__get_excel_data()
         return pd.DataFrame(self.__excel_data, columns=self.COLUMNS_NAME[7])
+    
+    def send_prediction(self, lat, lon):
+        logger.debug("Landing at {lat}, {lon}")
 
 class SensorSocket(object):
     def __init__(self, host, port):

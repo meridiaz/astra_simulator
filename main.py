@@ -26,7 +26,7 @@ logging.getLogger('urllib3').setLevel(logging.CRITICAL)
 #        time: tomorrow, this time
 launchSiteLat = 39.573517                 # deg
 launchSiteLon = -3.5172               # deg
-launchSiteElev = 704 #722                     # m
+launchSiteElev = 722                     # m
 dateAndTime = datetime.now() + timedelta(days=1)
 #dateAndTime = datetime(2021, 11, 11, 10, 15, 0)
 
@@ -60,7 +60,7 @@ simFlight = Flight(balloonGasType, balloonModel, nozzleLift, payloadTrainWeight,
                    forecast_wind=False, elevation_model=True, maxFlightTime=maxFlightTime)
 
 #simFlight.maxFlightTime = 5*60*60
-simFlight.outputFile = os.path.join('../simulaciones', 'prueba_comp5')
+simFlight.outputFile = os.path.join('../simulaciones', 'prueba2')
 
 
 # Run the simulation

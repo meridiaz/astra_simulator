@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+<name>Simulation simple main program</name>
+<atom:author>
+<atom:name>Meritxell Díaz COque</atom:name>
+</atom:author>
+<Style id="landingPin">
+<IconStyle>
+<scale>1.0</scale>
+<Icon>
+<href>http://maps.google.com/mapfiles/ms/micons/red-dot.png</href>
+</Icon>
+</IconStyle>
+</Style>
+<Style id="launchPin">
+<IconStyle>
+<scale>1.0</scale>
+<Icon>
+<href>http://maps.google.com/mapfiles/ms/micons/red-dot.png</href>
+</Icon>
+</IconStyle>
+</Style>
+<Style id="burstPin">
+<IconStyle>
+<scale>1.0</scale>
+<Icon>
+<href>http://maps.google.com/mapfiles/ms/micons/yellow-dot.png</href>
+</Icon>
+</IconStyle>
+</Style>
+<Style id="stratoLine">
+<LineStyle>
+<width>1.0</width>
+</LineStyle>
+</Style>
+
+<Placemark>
+<name>Payload landing (15.2D km)</name>
+<styleUrl>#landingPin</styleUrl>
+<description>Payload landing 15.2 km above the ground during descent phase</description>
+<Point>
+<coordinates>
+-2.3266438362472375, 39.71680096229018, ,0
+</coordinates>
+<altitudeMode>relativeToGround</altitudeMode>
+</Point>
+</Placemark>
+
+<Placemark>
+<name>Payload landing (14.0D km)</name>
+<styleUrl>#landingPin</styleUrl>
+<description>Payload landing 14.025 km above the ground during descent phase</description>
+<Point>
+<coordinates>
+-2.3579526256673993, 39.71370042284184, 0
+</coordinates>
+<altitudeMode>relativeToGround</altitudeMode>
+</Point>
+</Placemark>
+
+<Placemark>
+<name>Payload landing (13.0D km)</name>
+<styleUrl>#landingPin</styleUrl>
+<description>Payload landing 13.045 km above the ground during descent phase</description>
+<Point>
+<coordinates>
+-2.3845865014695375, 39.71267242775886, 0
+</coordinates>
+<altitudeMode>relativeToGround</altitudeMode>
+</Point>
+</Placemark>
+
+<Placemark>
+<name>Payload landing (12.0D km)</name>
+<styleUrl>#landingPin</styleUrl>
+<description>Payload landing 12.027 km above the ground during descent phase</description>
+<Point>
+<coordinates>
+-2.409549543599023, 39.713389677477, 0
+</coordinates>
+<altitudeMode>relativeToGround</altitudeMode>
+</Point>
+</Placemark>
+
+<Placemark>
+<name>Payload landing (11.0D km)</name>
+<styleUrl>#landingPin</styleUrl>
+<description>Payload landing 11.009 km above the ground during descent phase</description>
+<Point>
+<coordinates>
+-2.4300993758386547, 39.71287256662764,0
+</coordinates>
+<altitudeMode>relativeToGround</altitudeMode>
+</Point>
+</Placemark>
+
+<Placemark>
+<name>Payload landing (10.0D km)</name>
+<styleUrl>#landingPin</styleUrl>
+<description>Payload landing 10.042 km above the ground during descent phase</description>
+<Point>
+<coordinates>
+-2.4404066396131316, 39.71279833124169, 0
+</coordinates>
+<altitudeMode>relativeToGround</altitudeMode>
+</Point>
+</Placemark>
+
+<Placemark>
+<name>Payload landing (9.0D km)</name>
+<styleUrl>#landingPin</styleUrl>
+<description>Payload landing 9.015 km above the ground during descent phase</description>
+<Point>
+<coordinates>
+-2.454556876537081, 39.714470579025054, 0
+</coordinates>
+<altitudeMode>relativeToGround</altitudeMode>
+</Point>
+</Placemark>
+
+<Placemark>
+<name>Payload landing (8.0D km)</name>
+<styleUrl>#landingPin</styleUrl>
+<description>Payload landing 8.039 km above the ground during descent phase</description>
+<Point>
+<coordinates>
+-2.453983090097989, 39.714275652828064, 0
+</coordinates>
+<altitudeMode>relativeToGround</altitudeMode>
+</Point>
+</Placemark>
+
+<Placemark>
+<name>Payload landing (7.0D km)</name>
+<styleUrl>#landingPin</styleUrl>
+<description>Payload landing 7.014 km above the ground during descent phase</description>
+<Point>
+<coordinates>
+-2.456782449489973, 39.718263508962174, 0
+</coordinates>
+<altitudeMode>relativeToGround</altitudeMode>
+</Point>
+</Placemark>
+
+<Placemark>
+<name>Payload landing (6.0D km)</name>
+<styleUrl>#landingPin</styleUrl>
+<description>Payload landing 6.029 km above the ground during descent phase</description>
+<Point>
+<coordinates>
+-2.4515893774957997, 39.72366692603465, 0
+</coordinates>
+<altitudeMode>relativeToGround</altitudeMode>
+</Point>
+</Placemark>
+
+<Placemark>
+<name>Payload landing (5.0D km)</name>
+<styleUrl>#landingPin</styleUrl>
+<description>Payload landing 5.010 km above the ground during descent phase</description>
+<Point>
+<coordinates>
+-2.4512889003814595, 39.72776366416152, 0
+</coordinates>
+<altitudeMode>relativeToGround</altitudeMode>
+</Point>
+</Placemark>
+
+<Placemark>
+<name>Payload landing (4.0D km)</name>
+<styleUrl>#landingPin</styleUrl>
+<description>Payload landing 4.022 km above the ground during descent phase</description>
+<Point>
+<coordinates>
+-2.4403403417988776, 39.73486232176296, 0
+</coordinates>
+<altitudeMode>relativeToGround</altitudeMode>
+</Point>
+</Placemark>
+
+<Placemark>
+<name>Payload landing (3.0D km)</name>
+<styleUrl>#landingPin</styleUrl>
+<description>Payload landing 3.009 km above the ground during descent phase</description>
+<Point>
+<coordinates>
+-2.4409431437141276, 39.73883326527436, 0
+</coordinates>
+<altitudeMode>relativeToGround</altitudeMode>
+</Point>
+</Placemark>
+
+<Placemark>
+<name>Payload landing (2.0D km)</name>
+<styleUrl>#landingPin</styleUrl>
+<description>Payload landing 2.01 km above the ground during descent phase</description>
+<Point>
+<coordinates>
+-2.434191945445616, 39.74004146917597, 0
+</coordinates>
+<altitudeMode>relativeToGround</altitudeMode>
+</Point>
+</Placemark>
+
+<Placemark>
+<name>Payload landing (1.0D km)</name>
+<styleUrl>#landingPin</styleUrl>
+<description>Payload landing 1.035 km above the ground during descent phase</description>
+<Point>
+<coordinates>
+-2.4369675870875316, 39.741993656730536, 0
+</coordinates>
+<altitudeMode>relativeToGround</altitudeMode>
+</Point>
+</Placemark>
+
+<Placemark>
+<name>Real Payload landing</name>
+<styleUrl>#burstPin</styleUrl>
+<description>Payload landing</description>
+<Point>
+<coordinates>
+-2.436718, 39.740865, 0
+</coordinates>
+<altitudeMode>relativeToGround</altitudeMode>
+</Point>
+</Placemark>
+
+
+
+</Document>
+</kml>
