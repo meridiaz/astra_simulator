@@ -26,7 +26,7 @@ import os
 import pandas as pd
 
 TIME_BETWEEN_REQUESTS = 10  # time to sleep in each request to server in seconds 
-NUMBER_SIMULATIONS = 700
+NUMBER_SIMULATIONS = 500
 DESCENT_RATE = 5 # speed of descent phase in m/s
 ERROR_ALTS = 100 # error tolerated in altitudes in m
 
@@ -48,9 +48,9 @@ class Sensor(object):
         self.__excel_data = None
         self.__vert_speed = None
         self.__loaded_data_speed = False
-        print("Path to excel data: "+ self.DATA_PATH)
+        """ print("Path to excel data: "+ self.DATA_PATH)
         print("Sheet name: " + self.SHEET_NAME)
-        print("Columns name in excel data: " + str(self.COLUMNS_NAME))
+        print("Columns name in excel data: " + str(self.COLUMNS_NAME)) """
 
     def __get_excel_data(self):
         self.__excel_data = pd.read_excel(self.DATA_PATH, sheet_name=self.SHEET_NAME)
@@ -125,7 +125,7 @@ class Sensor(object):
     def has_burst(self, flightNumber):
         #return eval(input('Indique si el globo ya ha explotado'))
         if flightNumber * TIME_BETWEEN_REQUESTS > 3290:
-            print('HA EXPLOTADO----')
+            print('HAS BURSTED----')
         return flightNumber * TIME_BETWEEN_REQUESTS > 3290
 
 def calculate_wind(new_lat, old_lat, new_lon, old_lon):
@@ -149,29 +149,26 @@ def calculate_landing(u_wind, v_wind, alts, last_lat, last_lon, burst, ver_speed
     alt_profile = []
     alt_profile.append(alts[-1])
     
-    print(alts)
     #Store the drift in meters (this is the distance between the
     for i in range(len(u_wind)):
         # calculate next alt
-        
+        # in testing fixed speed at 5m/s provided better results
         if has_burst:
             new_alt = alt_profile[i] + ver_speed*TIME_BETWEEN_REQUESTS
-            print("vel vert:"+str(ver_speed))
+            #print("vel vert:"+str(ver_speed))
         else:
             new_alt = alt_profile[i] - DESCENT_RATE*TIME_BETWEEN_REQUESTS
        
         alt_profile.append(new_alt)
         # find closest alt
         index = tools.find_nearest_index(alts, new_alt)
-        print("real alt vs simulated", str(new_alt), str(alts[index]))
+        #print("real alt vs simulated", str(new_alt), str(alts[index]))
         
         # check error between altitudes
         if np.abs(new_alt-alts[index]) > ERROR_ALTS:
             print("Could not find a suitable altitude")
             break
-        print("valor del index"+str(index))
-        print("len del viento:"+str(len(v_wind))+str(len(v_wind)))
-        print("len alturas:"+str(len(alts)))
+        
         if alts[index] == alts[-1]:
             index = index - 1
         lastDriftLat += v_wind[index] * TIME_BETWEEN_REQUESTS
@@ -260,6 +257,6 @@ for flight_number in range(NUMBER_SIMULATIONS):
         flight_number = flight_number + 1
 
 
-print(altitudes)
+#print(altitudes)
 
 
